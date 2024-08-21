@@ -1,16 +1,11 @@
-use std::iter;
 use std::sync::{Mutex};
 use eframe::{App, CreationContext, Frame};
-use eframe::egui_wgpu::Renderer;
-use eframe::wgpu::{CommandEncoderDescriptor, Device, Extent3d, Queue, TextureFormat};
-use egui::load::SizedTexture;
-use egui::{Image, Ui, Vec2, Window};
+use egui::Window;
 use once_cell::sync::Lazy;
-use crate::{get, init_static};
+use crate::{get, init_static, render_pack_from_frame};
 use crate::packages::time_package::TimePackage;
 use crate::render_state::meh_renderer::MehRenderer;
-use crate::render_state::structs::EguiTexturePackage;
-use crate::render_state::test::test_render_pipeline::TestRenderPipeline;
+use crate::render_state::structs::RenderPack;
 
 
 // Globals
@@ -35,23 +30,28 @@ impl MehApp {
         }
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, render_pack: &mut RenderPack<'_>) {
         get!(TIME).update();
+
+        self.meh_renderer.update(render_pack)
     }
 
-    fn render(&mut self, frame: &mut Frame) {
-        let r_thing = frame.wgpu_render_state().unwrap();
-        let device = &r_thing.device;
-        let queue = &r_thing.queue;
-
-        self.meh_renderer.render_pass(device, queue)
+    fn render(&mut self, render_pack: &RenderPack<'_>) {
+        self.meh_renderer.render_pass(render_pack)
 
     }
 
     fn ui(&mut self, ctx: &egui::Context) {
+
         Window::new("test")
+            .resizable(true)
             .show(ctx, |ui| {
                 self.meh_renderer.display(ui);
+            });
+
+        Window::new("time")
+            .resizable(true)
+            .show(ctx, |ui| {
                 ui.label(format!("{}", get!(TIME).fps));
             });
     }
@@ -59,10 +59,15 @@ impl MehApp {
 
 impl App for MehApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut Frame) {
-        self.update();
-        self.render(frame);
+        render_pack_from_frame!(render_pack, frame);
+
+
+
+        self.update(&mut render_pack);
+        self.render(&render_pack);
         self.ui(ctx);
 
         ctx.request_repaint();
     }
 }
+

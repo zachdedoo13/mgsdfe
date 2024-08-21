@@ -1,10 +1,12 @@
 use std::iter;
 use eframe::egui_wgpu::Renderer;
-use eframe::wgpu::{CommandEncoderDescriptor, Device, Extent3d, Queue, TextureFormat};
+use eframe::wgpu::{CommandEncoderDescriptor, Device, Extent3d, TextureFormat};
 use egui::load::SizedTexture;
 use egui::{Image, Ui, Vec2};
-use crate::render_state::structs::EguiTexturePackage;
+use crate::render_state::structs::{EguiTexturePackage};
 use crate::render_state::test::test_render_pipeline::TestRenderPipeline;
+use crate::utility::functions::to_extent;
+use crate::render_state::structs::RenderPack;
 
 pub struct MehRenderer {
    pub test_render_pipeline: TestRenderPipeline,
@@ -26,22 +28,25 @@ impl MehRenderer {
       }
    }
 
-   pub fn update(&mut self) {
-
+   pub fn update(&mut self, render_pack: &mut RenderPack<'_>) {
+      self.egui_texture_package.update(render_pack);
    }
 
-   pub fn render_pass(&self, device: &Device, queue: &Queue) {
-      let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+   pub fn render_pass(&self, render_pack: &RenderPack<'_>) {
+      let mut encoder = render_pack.device.create_command_encoder(&CommandEncoderDescriptor {
          label: Some("the only encoder"),
       });
 
       self.test_render_pipeline.render_pass(&mut encoder, &self.egui_texture_package.view);
 
 
-      queue.submit(iter::once(encoder.finish()));
+      render_pack.queue.submit(iter::once(encoder.finish()));
    }
 
-   pub fn display(&self, ui: &mut Ui) {
+   pub fn display(&mut self, ui: &mut Ui) {
+      let ms = to_extent(ui.available_size());
+      self.egui_texture_package.size = ms;
+
       ui.add(
          Image::from_texture(
             SizedTexture::new(

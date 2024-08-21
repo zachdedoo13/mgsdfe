@@ -1,6 +1,7 @@
 use eframe::{egui_wgpu, wgpu};
 use eframe::egui::TextureId;
-use eframe::wgpu::{Device, Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
+use eframe::egui_wgpu::Renderer;
+use eframe::wgpu::{Device, Extent3d, Queue, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
 pub struct EguiTexturePackage {
    pub texture: Texture,
@@ -43,13 +44,20 @@ impl EguiTexturePackage {
       }
    }
 
-   pub fn update(&mut self, device: &Device, renderer: &mut egui_wgpu::Renderer) {
+   pub fn update(&mut self, render_pack: &mut RenderPack<'_>) {
       if self.texture.size() != self.size {
          let size = self.size;
 
          self.texture.destroy();
 
-         *self = Self::new(size, device, renderer);
+         *self = Self::new(size, render_pack.device, render_pack.renderer);
       }
    }
+}
+
+
+pub struct RenderPack<'a> {
+   pub device: &'a Device,
+   pub queue: &'a Queue,
+   pub renderer: &'a mut Renderer,
 }

@@ -3,7 +3,7 @@
 mod app;
 pub use app::MehApp;
 
-
+pub mod main;
 
 pub mod render_state {
    pub mod structs;
@@ -21,4 +21,5 @@ pub mod packages {
 
 pub mod utility {
    pub mod macros;
+   pub mod functions;
 }

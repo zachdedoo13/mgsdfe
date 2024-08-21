@@ -1,11 +1,8 @@
 #![warn(clippy::all, rust_2018_idioms)]
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use eframe::CreationContext;
 use eframe::egui_wgpu::WgpuConfiguration;
-use eframe::wgpu::PowerPreference::HighPerformance;
 use eframe::wgpu::PresentMode::Immediate;
-use sdt_thing::MehApp;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -35,6 +32,7 @@ fn main() -> eframe::Result {
 // web
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+use crate::MehApp;
 
 /// Your handle to the web app from JavaScript.
 #[cfg(target_arch = "wasm32")]
@@ -80,12 +78,12 @@ impl WebHandle {
     }
 
     /// Example on how to call into your app from JavaScript.
-    #[wasm_bindgen]
-    pub fn example(&self) {
-        if let Some(app) = self.runner.app_mut::<MehApp>() {
-            app.example();
-        }
-    }
+    // #[wasm_bindgen]
+    // pub fn example(&self) {
+    //     if let Some(app) = self.runner.app_mut::<MehApp>() {
+    //         app.example();
+    //     }
+    // }
 
     /// The JavaScript can check whether or not your app has crashed:
     #[wasm_bindgen]
@@ -104,3 +102,5 @@ impl WebHandle {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+fn main() {}
