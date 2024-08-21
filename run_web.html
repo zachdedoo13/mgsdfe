@@ -46,6 +46,10 @@
 
         // Call the start method with the id of the canvas element
         await webHandle.start('canvas');
+
+        window.addEventListener('beforeunload', () => {
+            webHandle.destroy();
+        });
     }
 
     run();

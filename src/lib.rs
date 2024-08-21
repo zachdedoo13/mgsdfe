@@ -2,7 +2,6 @@
 #![allow(special_module_name)]
 
 #[cfg(target_arch = "wasm32")]
-#[allow(special_module_name)]
 pub mod main;
 
 pub use app::MehApp;

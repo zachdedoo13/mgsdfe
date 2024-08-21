@@ -18,6 +18,7 @@ fn main() -> eframe::Result {
         vsync: false,
         wgpu_options: WgpuConfiguration {
             present_mode: Immediate,
+            power_preference: eframe::wgpu::PowerPreference::HighPerformance,
             ..Default::default()
         },
         viewport: egui::ViewportBuilder::default()
@@ -71,7 +72,13 @@ impl WebHandle {
         self.runner
             .start(
                 canvas_id,
-                eframe::WebOptions::default(),
+                eframe::WebOptions {
+                    wgpu_options: eframe::egui_wgpu::WgpuConfiguration {
+                        power_preference: eframe::wgpu::PowerPreference::HighPerformance,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
                 Box::new(|cc| Ok(Box::new(MehApp::new(cc))),)
             )
             .await
@@ -84,14 +91,6 @@ impl WebHandle {
     pub fn destroy(&self) {
         self.runner.destroy();
     }
-
-    /// Example on how to call into your app from JavaScript.
-    // #[wasm_bindgen]
-    // pub fn example(&self) {
-    //     if let Some(app) = self.runner.app_mut::<MehApp>() {
-    //         app.example();
-    //     }
-    // }
 
     /// The JavaScript can check whether or not your app has crashed:
     #[wasm_bindgen]
