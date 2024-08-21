@@ -1,8 +1,13 @@
-#![warn(clippy::all, rust_2018_idioms)]
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+#[cfg(not(target_arch = "wasm32"))]
 use eframe::egui_wgpu::WgpuConfiguration;
+
+#[cfg(not(target_arch = "wasm32"))]
 use eframe::wgpu::PresentMode::Immediate;
+
+#[cfg(not(target_arch = "wasm32"))]
+use sdt_thing::app::MehApp;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -32,7 +37,10 @@ fn main() -> eframe::Result {
 // web
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+
+#[cfg(target_arch = "wasm32")]
 use crate::MehApp;
+
 
 /// Your handle to the web app from JavaScript.
 #[cfg(target_arch = "wasm32")]
@@ -101,6 +109,3 @@ impl WebHandle {
         self.runner.panic_summary().map(|s| s.callstack())
     }
 }
-
-#[cfg(target_arch = "wasm32")]
-fn main() {}

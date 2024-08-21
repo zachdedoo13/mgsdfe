@@ -1,9 +1,12 @@
 #![warn(clippy::all, rust_2018_idioms)]
+#![allow(special_module_name)]
 
-mod app;
-pub use app::MehApp;
-
+#[cfg(target_arch = "wasm32")]
+#[allow(special_module_name)]
 pub mod main;
+
+pub use app::MehApp;
+pub mod app;
 
 pub mod render_state {
    pub mod structs;
