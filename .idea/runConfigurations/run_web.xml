@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run web" type="JavascriptDebugType" uri="http://localhost:63342/mgsdfe/run_web.html" useBuiltInWebServerPort="true">
+  <configuration default="false" name="run web" type="JavascriptDebugType" uri="http://localhost:63342/my_own_frame_for_sdf_thing/run_web.html" useBuiltInWebServerPort="true">
     <method v="2" />
   </configuration>
 </component>
