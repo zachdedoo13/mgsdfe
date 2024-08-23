@@ -272,6 +272,9 @@ fn variable_areas(ctx: &Context, ui: &mut Ui, current: &mut VariablePage) {
                         get!(TIME).fps_amount = fps_graph_amount;
                      } // settings
                   });
+
+                  // ui.set_max_width(200.0); todo limit width
+
                   let line = Line::new(get!(TIME).past_fps.clone());
                   Plot::new("my_plot")
                       .view_aspect(2.0)
@@ -280,7 +283,9 @@ fn variable_areas(ctx: &Context, ui: &mut Ui, current: &mut VariablePage) {
                       .allow_zoom(false)
                       .allow_boxed_zoom(false)
                       .show_axes(Vec2b::new(false, true))
-                      .show(ui, |plot_ui| plot_ui.line(line));
+                      .show(ui, |plot_ui| {
+                         plot_ui.line(line);
+                      });
                }); // fps
 
             {
