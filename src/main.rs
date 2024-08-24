@@ -1,10 +1,16 @@
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+
 #[cfg(not(target_arch = "wasm32"))]
 use eframe::egui_wgpu::WgpuConfiguration;
 
+use std::sync::Arc;
+// use wgpu::{Adapter, Backends, DeviceDescriptor, Features};
+use wgpu::{Adapter, Backends, DeviceDescriptor, Features};
+
 #[cfg(not(target_arch = "wasm32"))]
-use eframe::wgpu::PresentMode::Immediate;
+use wgpu::PresentMode::Immediate;
+
 
 #[cfg(not(target_arch = "wasm32"))]
 use sdt_thing::app::MehApp;
@@ -14,11 +20,20 @@ use sdt_thing::app::MehApp;
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
+    let device_descriptor_fn: Arc<dyn Fn(&Adapter) -> DeviceDescriptor<'static>> = Arc::new(|_adapter: &Adapter| {
+        DeviceDescriptor {
+            label: Some("wgpu native device desc"),
+            required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+            required_limits: Default::default(),
+        }
+    });
+
     let native_options = eframe::NativeOptions {
         vsync: false,
         wgpu_options: WgpuConfiguration {
             present_mode: Immediate,
             power_preference: eframe::wgpu::PowerPreference::HighPerformance,
+            device_descriptor: device_descriptor_fn,
             ..Default::default()
         },
         viewport: egui::ViewportBuilder::default()
@@ -38,7 +53,7 @@ fn main() -> eframe::Result {
 // web
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-
+use wgpu::Backend::Gl;
 #[cfg(target_arch = "wasm32")]
 use crate::MehApp;
 
@@ -69,12 +84,24 @@ impl WebHandle {
     /// Call this once from JavaScript to start your app.
     #[wasm_bindgen]
     pub async fn start(&self, canvas_id: &str) -> Result<(), wasm_bindgen::JsValue> {
+        let device_descriptor_fn: Arc<dyn Fn(&Adapter) -> DeviceDescriptor<'static>> = Arc::new(|_adapter: &Adapter| {
+            DeviceDescriptor {
+                label: Some("wgpu native device desc"),
+                required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+                // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                required_limits: Default::default(),
+            }
+        });
+
+
         self.runner
             .start(
                 canvas_id,
                 eframe::WebOptions {
                     wgpu_options: eframe::egui_wgpu::WgpuConfiguration {
                         power_preference: eframe::wgpu::PowerPreference::HighPerformance,
+                        device_descriptor: device_descriptor_fn,
+                        supported_backends: Backends::BROWSER_WEBGPU,
                         ..Default::default()
                     },
                     ..Default::default()

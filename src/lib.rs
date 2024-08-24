@@ -24,4 +24,5 @@ pub mod packages {
 pub mod utility {
    pub mod macros;
    pub mod functions;
+   pub mod structs;
 }

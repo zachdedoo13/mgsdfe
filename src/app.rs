@@ -8,35 +8,14 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use crate::{get, init_static, render_pack_from_frame};
 use crate::packages::time_package::TimePackage;
-use crate::render_state::meh_renderer::MehRenderer;
+use crate::render_state::meh_renderer::{MehRenderer, RenderSettings};
 use crate::render_state::structs::RenderPack;
 
 
 // Globals
 init_static!(TIME: TimePackage => {TimePackage::new()});
 
-
-// #[cfg(not(target_arch = "wasm32"))]
-// init_static!(SYS: SysUsage => { SysUsage::new() }); // todo => current fucked
-//
-// #[cfg(not(target_arch = "wasm32"))]
-// pub struct SysUsage {
-//    machine: machine_info::Machine,
-// }
-// #[cfg(not(target_arch = "wasm32"))]
-// impl SysUsage {
-//    pub fn new() -> Self {
-//       let mut machine = machine_info::Machine::new();
-//       // let pid = std::process::id() as i32;
-//
-//       // machine.track_process(pid).unwrap();
-//
-//       Self {
-//          machine,
-//       }
-//    }
-// }
-
+init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::new()});
 
 
 pub struct MehApp {
@@ -175,7 +154,10 @@ fn variable_areas(ctx: &Context, ui: &mut Ui, current: &mut VariablePage) {
 
       match current {
 
-         VariablePage::Shader => {}
+         VariablePage::Shader => {
+            ui.add(Slider::new(&mut get!(RENDER_SETTINGS).width, 1..=2048).text("width"));
+            ui.add(Slider::new(&mut get!(RENDER_SETTINGS).height, 1..=2048).text("width"));
+         }
 
          VariablePage::Camera => {}
 
@@ -272,7 +254,11 @@ fn variable_areas(ctx: &Context, ui: &mut Ui, current: &mut VariablePage) {
                         get!(TIME).fps_amount = fps_graph_amount;
                      } // settings
                   });
-                  let line = Line::new(get!(TIME).past_fps.clone());
+
+                  let mut data = get!(TIME).past_fps.clone();
+                  if data.len() > 0 { data.insert(0, [data[0][0] - 1.0, 0.0]); } // makes the zoom include {y: 0}
+
+                  let line = Line::new(data);
                   Plot::new("my_plot")
                       .view_aspect(2.0)
                       .allow_drag(false)
