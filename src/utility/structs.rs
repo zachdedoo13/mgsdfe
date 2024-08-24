@@ -121,6 +121,52 @@ impl StorageTexturePackage {
 }
 
 
+pub struct DualStorageTexturePackage {
+   textures: Flipper<StorageTexturePackage>,
+}
+impl DualStorageTexturePackage {
+   pub fn new(one: StorageTexturePackage, two: StorageTexturePackage) -> Self {
+      Self {
+         textures: Flipper::new(one, two),
+      }
+   }
+
+   pub fn pull_both(&self) -> DualOutput<'_> {
+      let read = self.textures.item_one();
+      let write = self.textures.item_two();
+
+      DualOutput {
+         read,
+         write,
+      }
+   }
+
+   pub fn pull_read(&self) -> &StorageTexturePackage {
+      self.textures.item_one()
+   }
+
+   pub fn pull_write(&self) -> &StorageTexturePackage {
+      self.textures.item_two()
+   }
+
+
+   pub fn update(&mut self, device: &Device, size_check: (u32, u32)) {
+      self.textures.one.update(device, size_check);
+      self.textures.two.update(device, size_check);
+   }
+
+   pub fn flip(&mut self) {
+      self.textures.flip();
+   }
+}
+
+pub struct DualOutput<'a> {
+   pub read: &'a StorageTexturePackage,
+   pub write: &'a StorageTexturePackage,
+}
+
+
+
 pub struct Flipper<T> {
    one: T,
    two: T,
@@ -131,21 +177,21 @@ impl<T> Flipper<T> {
       Self {one, two, active: false}
    }
 
-   pub fn item_one(&mut self) -> &mut T {
+   pub fn item_one(&self) -> &T {
       if self.active {
-         &mut self.one
+         &self.one
       }
       else {
-         &mut self.two
+         &self.two
       }
    }
 
-   pub fn item_two(&mut self) -> &mut T {
+   pub fn item_two(&self) -> &T {
       if self.active {
-         &mut self.two
+         &self.two
       }
       else {
-         &mut self.one
+         &self.one
       }
    }
 
