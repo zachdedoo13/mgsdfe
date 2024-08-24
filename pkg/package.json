@@ -1,0 +1,15 @@
+{
+  "name": "sdt_thing",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "sdt_thing_bg.wasm",
+    "sdt_thing.js",
+    "sdt_thing.d.ts"
+  ],
+  "main": "sdt_thing.js",
+  "types": "sdt_thing.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
