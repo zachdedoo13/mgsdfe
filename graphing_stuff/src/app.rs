@@ -10,7 +10,7 @@ pub struct MyNodeData {
    template: NodeTypes,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "persistence", derive(serde::Serialize, serde::Deserialize))]
 pub enum ConnectionTypes {
    Tree,
@@ -395,50 +395,53 @@ impl<'a> Traverser<'a> {
 
          let node = &graph.nodes[node_id];
 
-         // let inputs = &node.inputs;
-         //
-         // let output_one = node.outputs.get(0).unwrap();
-         // println!("{output_one:?}");
-         // for (data, output_id) in
+         let mut tree_children = find_tree_children_of_node(node_id, &self.inputs_cash, graph_state).unwrap_or(vec![]);
 
-         // let tree_children: Vec<NodeId> = node.outputs.iter().filter_map(|(data, output_id)| { if let Some(out) = graph.outputs.get(*output_id) { if let ConnectionTypes::Tree = out.typ { if let Some(child_input_id) = graph.iter_connection_groups().find_map(|connection| { if connection.1.contains(output_id) { Some(connection.0) } else { None } }) { if let Some(child_node) = self.inputs_cash.get(&child_input_id) { Some(*child_node) } else { None } } else { None } } else { None } } else { None } }).collect();
-
-
-         let tree_children: Vec<(NodeId, NodeTypes)> = node.outputs.iter().filter_map(|(data, output_id)| {
-            if let Some(out) = graph.outputs.get(*output_id) {
-               if let ConnectionTypes::Tree = out.typ {
-                  // todo O(n^2)
-                  let child_nodes: Vec<(NodeId, NodeTypes)> = graph.connections.iter().filter_map(|(input_id, output_ids)| {
-                     if output_ids.contains(output_id) {
-                        self.inputs_cash.get(&input_id).map(|&node_id| {
-                           let node_type = graph.nodes[node_id].user_data.template;
-                           (node_id, node_type)
-                        })
-                     } else {
-                        None
-                     }
-                  }).collect();
-                  if !child_nodes.is_empty() {
-                     Some(child_nodes)
-                  } else {
-                     None
-                  }
-               } else {
-                  None
-               }
-            } else {
-               None
-            }
-         }).flatten().collect();
-
-
+         let input_on_id = graph.nodes[tree_children[0].0].inputs[1].1;
+         let input = &graph.inputs[input_on_id];
+         println!("I1 {input:?}");
 
 
          println!("{tree_children:?}");
-
-         // let t = graph_state.
       }
    }
+}
+
+fn find_tree_children_of_node(
+      node_id: NodeId, inputs_cash: &HashMap<(InputId),
+      NodeId>, graph_state: &MyEditorState) -> Option<Vec<(NodeId, NodeTypes)>>
+{
+   let graph = &graph_state.graph;
+   let node = &graph[node_id];
+
+   let tree_children: Vec<(NodeId, NodeTypes)> =  node.outputs.iter().filter_map(|(data, output_id)| {
+      if let Some(out) = graph.outputs.get(*output_id) {
+         if let ConnectionTypes::Tree = out.typ {
+            // todo O(n^2)
+            let child_nodes: Vec<(NodeId, NodeTypes)> = graph.connections.iter().filter_map(|(input_id, output_ids)| {
+               if output_ids.contains(output_id) {
+                  inputs_cash.get(&input_id).map(|&node_id| {
+                     let node_type = graph.nodes[node_id].user_data.template;
+                     (node_id, node_type)
+                  })
+               } else {
+                  None
+               }
+            }).collect::<Vec<(NodeId, NodeTypes)>>();
+            if !child_nodes.is_empty() {
+               Some(child_nodes)
+            } else {
+               None
+            }
+         } else {
+            None
+         }
+      } else {
+         None
+      }
+   }).flatten().collect();
+
+   return Some(tree_children);
 }
 
 
