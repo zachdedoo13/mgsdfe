@@ -5,8 +5,12 @@ pub struct StorageTexturePackage {
    pub size: Extent3d,
    pub texture: Texture,
    pub view: TextureView,
-   pub bind_group_layout: BindGroupLayout,
-   pub bind_group: BindGroup,
+
+   pub read_bind_group_layout: BindGroupLayout,
+   pub read_bind_group: BindGroup,
+
+   pub write_bind_group_layout: BindGroupLayout,
+   pub write_bind_group: BindGroup,
 }
 impl StorageTexturePackage {
    pub fn new(device: &Device, size: (f32, f32)) -> Self {
@@ -32,40 +36,75 @@ impl StorageTexturePackage {
       let texture = device.create_texture(&texture_desc);
       let view = texture.create_view(&TextureViewDescriptor::default());
 
-      let bind_group_layout =
+
+      let read_bind_group_layout =
           device.create_bind_group_layout(&BindGroupLayoutDescriptor {
              entries: &[
                 wgpu::BindGroupLayoutEntry {
                    binding: 0,
                    visibility: ShaderStages::FRAGMENT | ShaderStages::COMPUTE,
                    ty: wgpu::BindingType::StorageTexture {
-                      access: StorageTextureAccess::ReadWrite,
+                      access: StorageTextureAccess::ReadOnly,
                       format: TextureFormat::Rgba32Float,
                       view_dimension: TextureViewDimension::D2,
                    },
                    count: None,
                 },
              ],
-             label: Some("texture_bind_group_layout"),
+             label: Some("texture_bind_group_layout Read Only"),
           });
 
-      let bind_group = device.create_bind_group(&BindGroupDescriptor {
-         layout: &bind_group_layout,
+      let read_bind_group = device.create_bind_group(&BindGroupDescriptor {
+         layout: &read_bind_group_layout,
          entries: &[
             BindGroupEntry {
                binding: 0,
                resource: wgpu::BindingResource::TextureView(&view),
             },
          ],
-         label: Some("diffuse_bind_group"),
+         label: Some("diffuse_bind_group  Read Only"),
       });
+
+
+      let write_bind_group_layout =
+          device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+             entries: &[
+                wgpu::BindGroupLayoutEntry {
+                   binding: 0,
+                   visibility: ShaderStages::FRAGMENT | ShaderStages::COMPUTE,
+                   ty: wgpu::BindingType::StorageTexture {
+                      access: StorageTextureAccess::WriteOnly,
+                      format: TextureFormat::Rgba32Float,
+                      view_dimension: TextureViewDimension::D2,
+                   },
+                   count: None,
+                },
+             ],
+             label: Some("texture_bind_group_layout Write only"),
+          });
+
+      let write_bind_group = device.create_bind_group(&BindGroupDescriptor {
+         layout: &write_bind_group_layout,
+         entries: &[
+            BindGroupEntry {
+               binding: 0,
+               resource: wgpu::BindingResource::TextureView(&view),
+            },
+         ],
+         label: Some("diffuse_bind_group  Read Only"),
+      });
+
 
       Self {
          size,
          texture,
          view,
-         bind_group_layout,
-         bind_group,
+
+         read_bind_group_layout,
+         read_bind_group,
+
+         write_bind_group_layout,
+         write_bind_group,
       }
    }
 

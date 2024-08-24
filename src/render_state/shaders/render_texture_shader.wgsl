@@ -20,7 +20,7 @@ fn vs_main(model: VertexInput,
 
 
 @group(0) @binding(0)
-var read_texture: texture_storage_2d<rgba32float, read_write>;
+var read_texture: texture_storage_2d<rgba32float, read>;
 
 @fragment
 fn fs_main(

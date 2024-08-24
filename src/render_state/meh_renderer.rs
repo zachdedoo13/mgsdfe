@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::{fs, iter};
+use std::{iter};
 use eframe::egui_wgpu::Renderer;
 use egui::load::SizedTexture;
 use egui::{Image, Ui, Vec2};
@@ -33,7 +33,9 @@ impl RenderSettings {
 
 
 pub struct MehRenderer {
+   #[allow(dead_code)]
    path_tracer_pipeline_layout: PipelineLayout,
+
    path_tracer_pipeline: ComputePipeline,
    path_tracer_texture: StorageTexturePackage,
    //
@@ -54,7 +56,7 @@ impl MehRenderer {
       let path_tracer_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("path_tracer_pipeline_layout"),
          bind_group_layouts: &[
-            &path_tracer_texture.bind_group_layout,
+            &path_tracer_texture.write_bind_group_layout,
          ],
          push_constant_ranges: &[],
       });
@@ -99,7 +101,6 @@ impl MehRenderer {
    }
 
    pub fn render_pass(&self, render_pack: &RenderPack<'_>) {
-      let view = &self.display_texture.view;
       let mut encoder = render_pack.device.create_command_encoder(&CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
@@ -139,7 +140,7 @@ impl MehRenderer {
       compute_pass.set_pipeline(&self.path_tracer_pipeline);
 
       // bind groups
-      compute_pass.set_bind_group(0, &self.path_tracer_texture.bind_group, &[]);
+      compute_pass.set_bind_group(0, &self.path_tracer_texture.write_bind_group, &[]);
 
       //
 
@@ -152,7 +153,7 @@ impl MehRenderer {
 }
 
 
-fn load_shader(device: &Device, map: String) -> ShaderModule {
+fn load_shader(device: &Device, _map: String) -> ShaderModule {
    // let source = fs::read_to_string("src/render_state/test/test_compute.glsl").unwrap();
    let source = include_str!("test/test_compute.glsl").to_string();
 
@@ -183,7 +184,7 @@ impl RenderTexturePipeline {
       let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
          bind_group_layouts: &[
-            &texture_package.bind_group_layout,
+            &texture_package.read_bind_group_layout,
          ],
          push_constant_ranges: &[],
       });
@@ -270,7 +271,7 @@ impl RenderTexturePipeline {
 
       render_pass.set_pipeline(&self.pipeline);
 
-      render_pass.set_bind_group(0, &texture_package.bind_group, &[]);
+      render_pass.set_bind_group(0, &texture_package.read_bind_group, &[]);
 
       render_pass.set_vertex_buffer(0, self.vertex_package.vertex_buffer.slice(..));
       render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);

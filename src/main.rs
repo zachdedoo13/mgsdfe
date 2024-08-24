@@ -5,8 +5,7 @@
 use eframe::egui_wgpu::WgpuConfiguration;
 
 use std::sync::Arc;
-// use wgpu::{Adapter, Backends, DeviceDescriptor, Features};
-use wgpu::{Adapter, Backends, DeviceDescriptor, Features};
+use wgpu::{Adapter, DeviceDescriptor, Features};
 
 #[cfg(not(target_arch = "wasm32"))]
 use wgpu::PresentMode::Immediate;
@@ -53,7 +52,7 @@ fn main() -> eframe::Result {
 // web
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-use wgpu::Backend::Gl;
+
 #[cfg(target_arch = "wasm32")]
 use crate::MehApp;
 
@@ -88,7 +87,6 @@ impl WebHandle {
             DeviceDescriptor {
                 label: Some("wgpu native device desc"),
                 required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-                // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                 required_limits: Default::default(),
             }
         });
@@ -101,7 +99,7 @@ impl WebHandle {
                     wgpu_options: eframe::egui_wgpu::WgpuConfiguration {
                         power_preference: eframe::wgpu::PowerPreference::HighPerformance,
                         device_descriptor: device_descriptor_fn,
-                        supported_backends: Backends::BROWSER_WEBGPU,
+                        supported_backends: wgpu::Backends::BROWSER_WEBGPU,
                         ..Default::default()
                     },
                     ..Default::default()
