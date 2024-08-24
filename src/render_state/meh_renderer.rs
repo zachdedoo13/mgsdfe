@@ -15,7 +15,6 @@ use crate::render_state::vertex_package::{Vertex, VertexPackage};
 use crate::utility::structs::{DualStorageTexturePackage, StorageTexturePackage};
 
 
-
 // is a static in app.rs
 pub struct RenderSettings {
    pub width: u32,
@@ -29,7 +28,6 @@ impl RenderSettings {
       }
    }
 }
-
 
 
 pub struct MehRenderer {
@@ -126,8 +124,8 @@ impl MehRenderer {
                self.display_texture.texture_id,
                Vec2::new(
                   self.display_texture.texture.size().width as f32,
-                  self.display_texture.texture.size().height as f32
-               )
+                  self.display_texture.texture.size().height as f32,
+               ),
             )
          )
       );
@@ -174,14 +172,11 @@ fn load_shader(device: &Device, _map: String) -> ShaderModule {
          shader: Cow::Owned(source),
          stage: ShaderStage::Compute,
          defines: FastHashMap::default(), // Adjust as needed for your shader
-      }
+      },
    };
 
    device.create_shader_module(shader_mod)
 }
-
-
-
 
 
 pub struct RenderTexturePipeline {
@@ -272,7 +267,7 @@ impl RenderTexturePipeline {
                      a: 1.0,
                   }),
                   store: wgpu::StoreOp::Store,
-               }
+               },
             })
          ],
          depth_stencil_attachment: None,
@@ -288,7 +283,6 @@ impl RenderTexturePipeline {
       render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
 
       render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
-
    }
 }
 

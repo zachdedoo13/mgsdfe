@@ -17,6 +17,9 @@ use sdt_thing::app::MehApp;
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    println!("remember to hide console in releases");
+
+
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let device_descriptor_fn: Arc<dyn Fn(&Adapter) -> DeviceDescriptor<'static>> = Arc::new(|_adapter: &Adapter| {
