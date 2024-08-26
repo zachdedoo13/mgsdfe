@@ -156,7 +156,6 @@ impl MehRenderer {
 
 
       get!(RENDER_SETTINGS).path_tracer_uniform_settings.time = get!(TIME).start_time.elapsed().as_secs_f32();
-      println!("{}", get!(RENDER_SETTINGS).path_tracer_uniform_settings.time);
       self.path_tracer_uniform.update_with_data(&render_pack.queue, get!(RENDER_SETTINGS).path_tracer_uniform_settings);
 
       self.path_tracer_textures.update(&render_pack.device, check);

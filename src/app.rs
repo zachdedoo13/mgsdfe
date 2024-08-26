@@ -434,6 +434,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
          let w = (aspect_scale as f32) as u32;
 
          ui.label(format!("Height -> {h}  |  Width -> {w}"));
+         ui.label(format!("Total pixels => {}", w * h));
 
          get!(RENDER_SETTINGS).width = w;
          get!(RENDER_SETTINGS).height = h;
@@ -444,7 +445,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
       }
 
       save_persisted!(ctx, "maintain_aspect_ratio", maintain_aspect_ratio);
-   });
+   }); // image size
 }
 
 

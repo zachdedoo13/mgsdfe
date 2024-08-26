@@ -17,21 +17,36 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
     float fov;
 } s;
 
+struct Ray { vec3 ro; vec3 rd; };
+struct Hit { float dist; };
 
-//Hit CastRay(Ray ray) {
-//    float t = 0.0;
-//    Mat mat;
-//    for (int i = 0; i < STEPS; i++) {
-//        vec3 p = ray.ro + ray.rd * t;
-//        Hit hit = map(p);
-//        mat = hit.mat;
-//        t += hit.d;
-//
-//        if (abs(hit.d) < MHD) break;
-//        if (t > FP) break;
-//    }
-//    return Hit(t, mat);
-//}
+
+#define FP 100.0
+#define MHD 0.01
+
+
+
+Hit map(vec3 p) {
+    return Hit(
+        min(
+            min(length(p - vec3(sin(s.time) * 2.0)) - 1.0, length(p + vec3(sin(s.time) * 2.0)) - 1.0),
+            min(length(p - vec3(sin(s.time) * 2.0, 2.0, 1.0)) - 1.0, length(p + vec3(sin(s.time) * 2.0, -2.0, 1.0)) - 1.0)
+        )
+    );
+}
+
+Hit CastRay(Ray ray) {
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map(p);
+        t += hit.dist;
+
+        if (abs(hit.dist) < MHD) break;
+        if (t > FP) Hit(-1.0);
+    }
+    return Hit(t);
+}
 
 
 
@@ -41,19 +56,26 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
 void main() {
     ivec2 gl_uv = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dimentions = imageSize(read_tex);
-    if (gl_uv.x > dimentions.x || gl_uv.y > dimentions.y) { return; } // bounds check
+    if (gl_uv.x > dimentions.x || gl_uv.y > dimentions.y) { return; }// bounds check
+
+    float aspect = float(dimentions.x) / float(dimentions.y);
 
     vec2 uv = vec2(gl_uv.x / float(dimentions.x), gl_uv.y / float(dimentions.y));
     uv = uv * 2.0 - 1.0;
+    uv.x *= aspect;
+
+    // setup
+    Ray ray = Ray(
+        vec3(0.0, 0.0, -8.0),
+        vec3(uv, 1.0)
+    );
 
 
     // path traceing
+    Hit test = CastRay(ray);
 
+    vec3 col = vec3(test.dist * 0.02);
 
-
-    vec3 col = imageLoad(read_tex, gl_uv).rgb;
-
-
-    imageStore(write_tex, gl_uv, vec4(uv, abs(sin(s.time)), 1.0));
+    imageStore(write_tex, gl_uv, vec4(col, 1.0));
 
 }
