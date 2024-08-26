@@ -326,6 +326,29 @@ fn settings(ctx: &Context, ui: &mut Ui) {
 
       ctx.memory_mut(|mem| mem.data.insert_persisted("current_theme".into(), current_theme.clone()));
    }); // themes
+
+   ui.group(|ui| {
+      let mut zoom = ctx.zoom_factor();
+
+      ui.label("Ui Zoom Factor");
+      ui.horizontal(|ui| {
+         ui.radio_value(&mut zoom, 0.5, "0.5");
+         ui.radio_value(&mut zoom, 0.75, "0.75");
+         ui.radio_value(&mut zoom, 1.0, "1.0");
+      });
+
+      ui.horizontal(|ui| {
+         ui.radio_value(&mut zoom, 1.25, "1.25");
+         ui.radio_value(&mut zoom, 1.5, "1.5");
+         ui.radio_value(&mut zoom, 1.5, "1.75");
+      });
+
+
+
+
+
+      ctx.set_zoom_factor(zoom)
+   });
 }
 fn set_theme(ctx: &Context) {
    let mut current_theme = ctx.memory_mut(|mem| {
@@ -349,22 +372,22 @@ fn set_theme(ctx: &Context) {
 
 
 fn shader_settings(ctx: &Context, ui: &mut Ui) {
-
-
    ui.group(|ui| {
-      let mut handles_or_scale = load_persisted!(ctx, "handles_or_scale", false);
+      let mut maintain_aspect_ratio = load_persisted!(ctx, "maintain_aspect_ratio", true);
 
       ui.horizontal(|ui| {
          ui.label("Resolution settings");
-         toggle_ui_compact(ui, &mut handles_or_scale);
       });
 
+      ui.group(|ui| {
+         ui.horizontal(|ui| {
+            toggle_ui_compact(ui, &mut maintain_aspect_ratio);
+            ui.label("Maintain aspect");
+            get!(RENDER_SETTINGS).maintain_aspect_ratio = maintain_aspect_ratio;
+         });
+      });
 
-      if handles_or_scale {
-         ui.add(Slider::new(&mut get!(RENDER_SETTINGS).width, 1..=2048).text("width"));
-         ui.add(Slider::new(&mut get!(RENDER_SETTINGS).height, 1..=2048).text("width"));
-      }
-      else {
+      {
          let mut selected_aspect = load_persisted!(ctx, "selected_aspect", {(16, 9)} );
          let mut aspect_scale = load_persisted!(ctx, "aspect_scale", 1000);
 
@@ -375,7 +398,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
             (1, 1),
          ];
 
-         ComboBox::from_label("Select Aspect Ratio")
+         ComboBox::from_label("Aspect Ratio")
              .selected_text(format!("{}:{}", selected_aspect.0, selected_aspect.1))
              .show_ui(ui, |ui| {
                 for aspect in &aspect_ratios {
@@ -383,11 +406,11 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
                 }
              });
 
-         let aspect = selected_aspect.0 as f32 / selected_aspect.1 as f32;
-         ui.add(Slider::new(&mut aspect_scale, 10..=2048).text("aspect scale"));
+         let aspect = selected_aspect.1 as f32 / selected_aspect.0 as f32;
+         ui.add(Slider::new(&mut aspect_scale, 8..=3840).text("Scale"));
 
-         let h = (aspect_scale as f32) as u32;
-         let w = (aspect_scale as f32 * aspect) as u32;
+         let h = (aspect_scale as f32 * aspect) as u32;
+         let w = (aspect_scale as f32) as u32;
 
          ui.label(format!("Height -> {h}  |  Width -> {w}"));
 
@@ -400,7 +423,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
       }
 
 
-      save_persisted!(ctx, "handles_or_scale", handles_or_scale);
+      save_persisted!(ctx, "maintain_aspect_ratio", maintain_aspect_ratio);
    });
 }
 

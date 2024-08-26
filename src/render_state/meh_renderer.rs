@@ -19,12 +19,16 @@ use crate::utility::structs::{DualStorageTexturePackage, StorageTexturePackage};
 pub struct RenderSettings {
    pub width: u32,
    pub height: u32,
+
+   pub maintain_aspect_ratio: bool,
 }
 impl RenderSettings {
    pub fn new() -> Self {
       Self {
          width: 250,
          height: 250,
+
+         maintain_aspect_ratio: true,
       }
    }
 }
@@ -115,7 +119,27 @@ impl MehRenderer {
    }
 
    pub fn display(&mut self, ui: &mut Ui) {
-      let ms = to_extent(ui.available_size());
+      let max = to_extent(ui.available_size());
+      let mut ms = max;
+
+      if get!(RENDER_SETTINGS).maintain_aspect_ratio {
+         let aspect = {
+            let w = get!(RENDER_SETTINGS).width;
+            let h = get!(RENDER_SETTINGS).height;
+            h as f32 / w as f32
+         };
+
+         ms.height = (ms.width as f32 * aspect) as u32;
+
+         if ms.height > max.height {
+            let diff = ms.height as f32 - max.height as f32;
+            println!("Diff -> {}", diff);
+
+            ms.height -= diff as u32;
+            ms.width -= diff as u32;
+         }
+      }
+
       self.display_texture.size = ms;
 
       ui.add(
