@@ -9,11 +9,13 @@ pub mod app;
 
 pub mod render_state {
    pub mod structs;
-   pub mod vertex_library;
-   pub mod vertex_package;
    pub mod meh_renderer;
    pub mod test {
       pub mod test_render_pipeline;
+   }
+   pub mod packages {
+      pub mod vertex_library;
+      pub mod vertex_package;
    }
 }
 

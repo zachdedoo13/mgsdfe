@@ -1,8 +1,8 @@
 use eframe::wgpu;
 use eframe::wgpu::{Color, CommandEncoder, Device, IndexFormat, RenderPipeline, TextureFormat, TextureView};
 use eframe::wgpu::util::DeviceExt;
-use crate::render_state::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
-use crate::render_state::vertex_package::{Vertex, VertexPackage};
+use crate::render_state::packages::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
+use crate::render_state::packages::vertex_package::{Vertex, VertexPackage};
 
 pub struct TestRenderPipeline {
    vertex_package: VertexPackage,

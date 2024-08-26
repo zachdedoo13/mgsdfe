@@ -1,7 +1,7 @@
 use std::sync::{Mutex};
 use std::time::Duration;
 use eframe::{App, CreationContext, Frame};
-use egui::{CentralPanel, ComboBox, Context, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
+use egui::{CentralPanel, ComboBox, Context, DragValue, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
 use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
 use once_cell::sync::Lazy;
@@ -9,14 +9,14 @@ use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
 use crate::{get, init_static, load_persisted, render_pack_from_frame, save_persisted};
 use crate::packages::time_package::TimePackage;
-use crate::render_state::meh_renderer::{MehRenderer, RenderSettings};
-use crate::render_state::structs::RenderPack;
+use crate::render_state::meh_renderer::MehRenderer;
+use crate::render_state::structs::{RenderPack, RenderSettings};
 
 
 // Globals
 init_static!(TIME: TimePackage => {TimePackage::new()});
 
-init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::new()});
+init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::default()});
 
 
 pub struct MehApp {
@@ -49,9 +49,9 @@ impl MehApp {
 
 
       // init
+      let ctx = &cc.egui_ctx;
       set_theme(&cc.egui_ctx);
       {
-         let ctx = &cc.egui_ctx;
          let selected_aspect = load_persisted!(ctx, "selected_aspect", {(16, 9)} );
          let aspect_scale = load_persisted!(ctx, "aspect_scale", 1000);
 
@@ -63,6 +63,9 @@ impl MehApp {
          get!(RENDER_SETTINGS).width = w;
          get!(RENDER_SETTINGS).height = h;
       } // init aspect of shader
+      {
+         get!(RENDER_SETTINGS) = load_persisted!(ctx, "render_settings", RenderSettings::default())
+      }
 
 
       // init temp values
@@ -393,6 +396,8 @@ fn set_theme(ctx: &Context) {
 
 
 fn shader_settings(ctx: &Context, ui: &mut Ui) {
+   let rs = &mut get!(RENDER_SETTINGS);
+
    ui.group(|ui| {
       let mut maintain_aspect_ratio = load_persisted!(ctx, "maintain_aspect_ratio", true);
 
@@ -404,7 +409,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
          ui.horizontal(|ui| {
             toggle_ui_compact(ui, &mut maintain_aspect_ratio);
             ui.label("Maintain aspect");
-            get!(RENDER_SETTINGS).maintain_aspect_ratio = maintain_aspect_ratio;
+            rs.maintain_aspect_ratio = maintain_aspect_ratio;
          });
       });
 
@@ -436,8 +441,8 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
          ui.label(format!("Height -> {h}  |  Width -> {w}"));
          ui.label(format!("Total pixels => {}", w * h));
 
-         get!(RENDER_SETTINGS).width = w;
-         get!(RENDER_SETTINGS).height = h;
+         rs.width = w;
+         rs.height = h;
 
 
          save_persisted!(ctx, "selected_aspect", selected_aspect);
@@ -446,6 +451,26 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
 
       save_persisted!(ctx, "maintain_aspect_ratio", maintain_aspect_ratio);
    }); // image size
+   ui.group(|ui| {
+      ui.label("position");
+      ui.horizontal(|ui| {
+         ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.cam_pos[0]).speed(0.01));
+         ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.cam_pos[1]).speed(0.01));
+         ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.cam_pos[2]).speed(0.01));
+      });
+   }); // pos
+   ui.group(|ui| {
+      ui.label("raymarch settings");
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.steps_per_ray));
+
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.start_eps).speed(0.001).prefix("start_eps"));
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.max_dist).speed(0.001).prefix("max_dist"));
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.relaxation).speed(0.001).prefix("relaxation"));
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.step_scale_factor).speed(0.001).prefix("step_scale_factor"));
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.eps_scale).speed(0.001).prefix("eps_scale"));
+   }); // raymarch
+
+   save_persisted!(ctx, "render_settings", *rs);
 }
 
 

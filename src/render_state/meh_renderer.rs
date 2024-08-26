@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::{iter};
-use bytemuck::{bytes_of, Pod, Zeroable};
+use std::mem::size_of;
+use bytemuck::{bytes_of};
 use eframe::egui_wgpu::Renderer;
 use egui::load::SizedTexture;
 use egui::{Image, Ui, Vec2};
@@ -9,72 +10,13 @@ use wgpu::naga::{FastHashMap, ShaderStage};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use crate::app::{RENDER_SETTINGS, TIME};
 use crate::get;
-use crate::render_state::structs::{EguiTexturePackage};
+use crate::render_state::structs::{EguiTexturePackage, PathTracerUniformSettings, RenderSettings};
 use crate::utility::functions::to_extent;
 use crate::render_state::structs::RenderPack;
-use crate::render_state::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
-use crate::render_state::vertex_package::{Vertex, VertexPackage};
+use crate::render_state::packages::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
+use crate::render_state::packages::vertex_package::{Vertex, VertexPackage};
 use crate::utility::structs::{DualStorageTexturePackage, StorageTexturePackage};
 
-
-// is a static in app.rs
-pub struct RenderSettings {
-   pub width: u32,
-   pub height: u32,
-
-   pub maintain_aspect_ratio: bool,
-
-   pub path_tracer_uniform_settings: PathTracerUniformSettings,
-}
-
-impl RenderSettings {
-   pub fn new() -> Self {
-      Self {
-         width: 250,
-         height: 250,
-
-         maintain_aspect_ratio: true,
-
-         path_tracer_uniform_settings: PathTracerUniformSettings::default(),
-      }
-   }
-}
-
-#[repr(C)]
-#[derive(Pod, Copy, Clone, Zeroable)]
-pub struct PathTracerUniformSettings {
-   pub time: f32,
-   pub frame: i32,
-   pub last_clear_frame: i32,
-
-   pub samples_per_frame: i32,
-
-   pub steps_per_ray: i32,
-   pub bounces: i32,
-   pub fov: f32,
-
-   // pub cam_pos: [f32; 3],
-   // pub cam_dir: [f32; 3],
-}
-
-impl Default for PathTracerUniformSettings {
-   fn default() -> Self {
-      Self {
-         time: 0.0,
-         frame: 0,
-         last_clear_frame: 0,
-
-         samples_per_frame: 1,
-
-         steps_per_ray: 60,
-         bounces: 8,
-         fov: 90.0,
-
-         // cam_pos: [0.0, 0.0, 0.0],
-         // cam_dir: [0.0, 0.0, 0.0],
-      }
-   }
-}
 
 
 pub struct MehRenderer {
@@ -97,7 +39,7 @@ impl MehRenderer {
       let render_settings = &get!(RENDER_SETTINGS);
 
       // Path tracer
-      let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::new().path_tracer_uniform_settings);
+      let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::default().path_tracer_uniform_settings);
 
       let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));

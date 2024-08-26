@@ -1,4 +1,4 @@
-use crate::render_state::vertex_package::Vertex;
+use crate::render_state::packages::vertex_package::Vertex;
 
 pub const SQUARE_VERTICES: &[Vertex] = &[
    Vertex { position: [1.0, 1.0, 0.0] }, // Vertex 0: top-right
