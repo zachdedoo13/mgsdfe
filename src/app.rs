@@ -343,10 +343,6 @@ fn settings(ctx: &Context, ui: &mut Ui) {
          ui.radio_value(&mut zoom, 1.5, "1.75");
       });
 
-
-
-
-
       ctx.set_zoom_factor(zoom)
    });
 }
