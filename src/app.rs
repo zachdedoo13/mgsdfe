@@ -22,6 +22,7 @@ init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::new()});
 pub struct MehApp {
    meh_renderer: MehRenderer,
 }
+
 impl App for MehApp {
    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
       render_pack_from_frame!(render_pack, frame);
@@ -37,6 +38,7 @@ impl App for MehApp {
       Duration::from_secs_f32(1.0)
    }
 }
+
 impl MehApp {
    pub fn new(cc: &CreationContext<'_>) -> Self {
       let render_state = cc.wgpu_render_state.as_ref().unwrap();
@@ -48,6 +50,19 @@ impl MehApp {
 
       // init
       set_theme(&cc.egui_ctx);
+      {
+         let ctx = &cc.egui_ctx;
+         let selected_aspect = load_persisted!(ctx, "selected_aspect", {(16, 9)} );
+         let aspect_scale = load_persisted!(ctx, "aspect_scale", 1000);
+
+         let aspect = selected_aspect.1 as f32 / selected_aspect.0 as f32;
+
+         let h = (aspect_scale as f32 * aspect) as u32;
+         let w = (aspect_scale as f32) as u32;
+
+         get!(RENDER_SETTINGS).width = w;
+         get!(RENDER_SETTINGS).height = h;
+      } // init aspect of shader
 
 
       // init temp values
@@ -90,6 +105,7 @@ impl MehApp {
              SidePanel::new(Side::Left, "Left main")
                  .resizable(true)
                  .default_width(500.0)
+                 .max_width(ctx.screen_rect().max.x * 0.7)
                  .show_inside(ui, |ui| {
                     // sdf editor
 
@@ -106,7 +122,6 @@ impl MehApp {
                         .resizable(true)
                         .default_height(500.0)
                         .show_inside(ui, |ui| {
-
                            // settings
                            SidePanel::new(Side::Left, "left settings")
                                .show_inside(ui, |ui| {
@@ -142,6 +157,7 @@ impl MehApp {
 
 #[derive(PartialOrd, PartialEq, Clone, Debug, Serialize, Deserialize)]
 enum VariablePage { Shader, Camera, Settings, Stats }
+
 fn variable_areas(ctx: &Context, ui: &mut Ui, current: &mut VariablePage) {
    ComboBox::from_label("")
        .selected_text(format!("{:?}", current))
@@ -260,6 +276,7 @@ fn stats(ctx: &Context, ui: &mut Ui) {
 
 #[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
 enum ThemeMethod { Egui(bool), Catppuccin(CatppuccinThemeWrapper) }
+
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum CatppuccinThemeWrapper {
    Latte,
@@ -267,6 +284,7 @@ pub enum CatppuccinThemeWrapper {
    Macchiato,
    Mocha,
 }
+
 fn settings(ctx: &Context, ui: &mut Ui) {
    ui.group(|ui| {
       impl CatppuccinThemeWrapper {
@@ -285,7 +303,7 @@ fn settings(ctx: &Context, ui: &mut Ui) {
              mem.data.get_persisted("current_theme".into()).unwrap_or_else(|| ThemeMethod::Catppuccin(CatppuccinThemeWrapper::Frappe))
           });
 
-      ComboBox::from_label("Select Theme Method")
+      ComboBox::from_label("Theme Method")
           .selected_text(match current_theme {
              ThemeMethod::Egui(_) => { "Egui" }
              ThemeMethod::Catppuccin(_) => { "Catppuccin" }
@@ -306,7 +324,7 @@ fn settings(ctx: &Context, ui: &mut Ui) {
          }
 
          ThemeMethod::Catppuccin(theme) => {
-            ComboBox::from_label("Catppuccin theme")
+            ComboBox::from_label("Theme")
                 .selected_text(match &theme {
                    CatppuccinThemeWrapper::Latte => "Latte",
                    CatppuccinThemeWrapper::Frappe => "Frappe",
@@ -332,20 +350,27 @@ fn settings(ctx: &Context, ui: &mut Ui) {
 
       ui.label("Ui Zoom Factor");
       ui.horizontal(|ui| {
+         ui.radio_value(&mut zoom, 0.25, "0.25");
          ui.radio_value(&mut zoom, 0.5, "0.5");
          ui.radio_value(&mut zoom, 0.75, "0.75");
-         ui.radio_value(&mut zoom, 1.0, "1.0");
       });
 
       ui.horizontal(|ui| {
+         ui.radio_value(&mut zoom, 1.0, "1.0");
          ui.radio_value(&mut zoom, 1.25, "1.25");
          ui.radio_value(&mut zoom, 1.5, "1.5");
-         ui.radio_value(&mut zoom, 1.5, "1.75");
+      });
+
+      ui.horizontal(|ui| {
+         ui.radio_value(&mut zoom, 1.75, "1.75");
+         ui.radio_value(&mut zoom, 2.0, "2.0");
+         ui.radio_value(&mut zoom, 2.25, "2.25");
       });
 
       ctx.set_zoom_factor(zoom)
    });
 }
+
 fn set_theme(ctx: &Context) {
    let mut current_theme = ctx.memory_mut(|mem| {
       mem.data.get_persisted("current_theme".into()).unwrap_or_else(|| ThemeMethod::Catppuccin(CatppuccinThemeWrapper::Frappe))
@@ -418,16 +443,9 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
          save_persisted!(ctx, "aspect_scale", aspect_scale);
       }
 
-
       save_persisted!(ctx, "maintain_aspect_ratio", maintain_aspect_ratio);
    });
 }
-
-
-
-
-
-
 
 
 // my fgb

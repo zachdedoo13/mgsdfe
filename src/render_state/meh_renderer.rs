@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::{iter};
+use bytemuck::{bytes_of, Pod, Zeroable};
 use eframe::egui_wgpu::Renderer;
 use egui::load::SizedTexture;
 use egui::{Image, Ui, Vec2};
-use wgpu::{Color, CommandEncoder, CommandEncoderDescriptor, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, IndexFormat, PipelineLayout, PipelineLayoutDescriptor, RenderPipeline, ShaderModule, ShaderModuleDescriptor, ShaderSource, TextureFormat, TextureView};
+use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, Color, CommandEncoder, CommandEncoderDescriptor, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, IndexFormat, PipelineLayout, PipelineLayoutDescriptor, Queue, RenderPipeline, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat, TextureView};
 use wgpu::naga::{FastHashMap, ShaderStage};
-use crate::app::RENDER_SETTINGS;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use crate::app::{RENDER_SETTINGS, TIME};
 use crate::get;
 use crate::render_state::structs::{EguiTexturePackage};
 use crate::utility::functions::to_extent;
@@ -21,7 +23,10 @@ pub struct RenderSettings {
    pub height: u32,
 
    pub maintain_aspect_ratio: bool,
+
+   pub path_tracer_uniform_settings: PathTracerUniformSettings,
 }
+
 impl RenderSettings {
    pub fn new() -> Self {
       Self {
@@ -29,6 +34,44 @@ impl RenderSettings {
          height: 250,
 
          maintain_aspect_ratio: true,
+
+         path_tracer_uniform_settings: PathTracerUniformSettings::default(),
+      }
+   }
+}
+
+#[repr(C)]
+#[derive(Pod, Copy, Clone, Zeroable)]
+pub struct PathTracerUniformSettings {
+   pub time: f32,
+   pub frame: i32,
+   pub last_clear_frame: i32,
+
+   pub samples_per_frame: i32,
+
+   pub steps_per_ray: i32,
+   pub bounces: i32,
+   pub fov: f32,
+
+   // pub cam_pos: [f32; 3],
+   // pub cam_dir: [f32; 3],
+}
+
+impl Default for PathTracerUniformSettings {
+   fn default() -> Self {
+      Self {
+         time: 0.0,
+         frame: 0,
+         last_clear_frame: 0,
+
+         samples_per_frame: 1,
+
+         steps_per_ray: 60,
+         bounces: 8,
+         fov: 90.0,
+
+         // cam_pos: [0.0, 0.0, 0.0],
+         // cam_dir: [0.0, 0.0, 0.0],
       }
    }
 }
@@ -40,6 +83,7 @@ pub struct MehRenderer {
 
    path_tracer_pipeline: ComputePipeline,
    path_tracer_textures: DualStorageTexturePackage,
+   path_tracer_uniform: PathTracerUniform,
    //
    // post_process_pipeline: RenderPipeline,
    // post_process_texture: StorageTexturePackage,
@@ -47,11 +91,14 @@ pub struct MehRenderer {
    display_texture: EguiTexturePackage,
    display_texture_pipeline: RenderTexturePipeline,
 }
+
 impl MehRenderer {
    pub fn new(device: &Device, renderer: &mut Renderer) -> Self {
       let render_settings = &get!(RENDER_SETTINGS);
 
       // Path tracer
+      let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::new().path_tracer_uniform_settings);
+
       let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let path_tracer_textures = DualStorageTexturePackage::new(one, two);
@@ -62,6 +109,7 @@ impl MehRenderer {
          bind_group_layouts: &[
             &refs.read.read_bind_group_layout,
             &refs.write.write_bind_group_layout,
+            &path_tracer_uniform.layout,
          ],
          push_constant_ranges: &[],
       });
@@ -76,6 +124,9 @@ impl MehRenderer {
          compilation_options: Default::default(),
       });
 
+
+      // display texture
+
       let display_texture = EguiTexturePackage::new(Extent3d {
          width: 250,
          height: 250,
@@ -88,6 +139,7 @@ impl MehRenderer {
          path_tracer_pipeline_layout,
          path_tracer_pipeline,
          path_tracer_textures,
+         path_tracer_uniform,
 
          display_texture,
          display_texture_pipeline,
@@ -101,6 +153,11 @@ impl MehRenderer {
          let rs = &get!(RENDER_SETTINGS);
          (rs.width, rs.height)
       };
+
+
+      get!(RENDER_SETTINGS).path_tracer_uniform_settings.time = get!(TIME).start_time.elapsed().as_secs_f32();
+      println!("{}", get!(RENDER_SETTINGS).path_tracer_uniform_settings.time);
+      self.path_tracer_uniform.update_with_data(&render_pack.queue, get!(RENDER_SETTINGS).path_tracer_uniform_settings);
 
       self.path_tracer_textures.update(&render_pack.device, check);
    }
@@ -133,7 +190,6 @@ impl MehRenderer {
 
          if ms.height > max.height {
             let diff = ms.height as f32 - max.height as f32;
-            println!("Diff -> {}", diff);
 
             ms.height -= diff as u32;
             ms.width -= diff as u32;
@@ -171,6 +227,7 @@ impl MehRenderer {
          // bind groups
          compute_pass.set_bind_group(0, &refs.read.read_bind_group, &[]);
          compute_pass.set_bind_group(1, &refs.write.write_bind_group, &[]);
+         compute_pass.set_bind_group(2, &self.path_tracer_uniform.bind_group, &[]);
 
          let size = refs.read.size;
          let wg = 16;
@@ -186,9 +243,8 @@ impl MehRenderer {
    }
 }
 
-
 fn load_shader(device: &Device, _map: String) -> ShaderModule {
-   let source = include_str!("test/test_compute.glsl").to_string();
+   let source = include_str!("shaders/path_tracer.glsl").to_string();
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
@@ -207,6 +263,7 @@ pub struct RenderTexturePipeline {
    vertex_package: VertexPackage,
    pub pipeline: RenderPipeline,
 }
+
 impl RenderTexturePipeline {
    pub fn new(device: &Device, texture_package: &StorageTexturePackage) -> Self {
       let vertex_package = VertexPackage::new(&device, SQUARE_VERTICES, SQUARE_INDICES);
@@ -307,6 +364,62 @@ impl RenderTexturePipeline {
       render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
 
       render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
+   }
+}
+
+
+pub struct PathTracerUniform {
+   bind_group: BindGroup,
+   layout: BindGroupLayout,
+   buffer: Buffer,
+}
+
+impl PathTracerUniform {
+   pub fn new(device: &Device, data: &PathTracerUniformSettings) -> Self {
+      let buffer = device.create_buffer_init(&BufferInitDescriptor {
+         label: Some("PathTracerUniform"),
+         contents: bytes_of(data),
+         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+      });
+
+      let layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+         label: Some("UniformPackageSingles"),
+         entries: &[
+            wgpu::BindGroupLayoutEntry {
+               binding: 0,
+               visibility: ShaderStages::COMPUTE,
+               ty: wgpu::BindingType::Buffer {
+                  ty: wgpu::BufferBindingType::Uniform,
+                  has_dynamic_offset: false,
+                  min_binding_size: wgpu::BufferSize::new(size_of::<PathTracerUniformSettings>() as u64),
+               },
+               count: None,
+            },
+         ],
+      });
+
+      let bind_group = device.create_bind_group(&BindGroupDescriptor {
+         label: None,
+         layout: &layout,
+         entries: &[BindGroupEntry {
+            binding: 0,
+            resource: buffer.as_entire_binding(),
+         }],
+      });
+
+      Self {
+         buffer,
+         bind_group,
+         layout,
+      }
+   }
+
+   pub fn update_with_data(&self, queue: &Queue, data: PathTracerUniformSettings) {
+      queue.write_buffer(
+         &self.buffer,
+         0,
+         bytes_of(&data),
+      );
    }
 }
 
