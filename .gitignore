@@ -1,3 +1,4 @@
 /target
 /graphing_stuff/target
 /pkg/.gitignore
+/rendering_stuff/target

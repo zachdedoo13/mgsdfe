@@ -7,10 +7,10 @@ use egui_plot::{Line, Plot};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
+use rendering_stuff::render_state::MehRenderer;
+use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
 use crate::{get, init_static, load_persisted, render_pack_from_frame, save_persisted};
 use crate::packages::time_package::TimePackage;
-use crate::render_state::meh_renderer::MehRenderer;
-use crate::render_state::structs::{RenderPack, RenderSettings};
 
 
 // Globals
@@ -45,7 +45,7 @@ impl MehApp {
       let renderer = &mut render_state.renderer.write();
       let device = &render_state.device;
 
-      let meh_renderer = MehRenderer::new(device, renderer);
+      let meh_renderer = MehRenderer::new(device, renderer, &get!(RENDER_SETTINGS));
 
 
       // init
@@ -81,7 +81,10 @@ impl MehApp {
    fn update(&mut self, render_pack: &mut RenderPack<'_>) {
       get!(TIME).update();
 
-      self.meh_renderer.update(render_pack)
+      let render_settings = &mut get!(RENDER_SETTINGS);
+      render_settings.path_tracer_uniform_settings.time = get!(TIME).start_time.elapsed().as_secs_f32();
+
+      self.meh_renderer.update(render_pack, &render_settings)
    }
 
    fn render(&mut self, render_pack: &RenderPack<'_>) {
@@ -150,7 +153,7 @@ impl MehApp {
                     // content
                     CentralPanel::default()
                         .show_inside(ui, |ui| {
-                           self.meh_renderer.display(ui);
+                           self.meh_renderer.display(ui, &get!(RENDER_SETTINGS));
                         });
                  });
           });
