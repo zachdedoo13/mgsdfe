@@ -44,3 +44,4 @@ Hit CastRayFast(Ray ray) {
 
     return Hit(t);
 }
+

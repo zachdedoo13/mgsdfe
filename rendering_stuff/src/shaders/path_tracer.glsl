@@ -16,7 +16,7 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
     int bounces;
     float fov;
 
-    float start_eps;
+    int mode;
     float max_dist;
     float relaxation;
     float step_scale_factor;
@@ -144,26 +144,355 @@ Hit opUnion(Hit v1, Hit v2) {
     return v1.d < v2.d ? v1 : v2;
 }
 
+////////////
+/// AABB ///
+////////////
+
+struct AABB {
+    vec3 min;
+    vec3 max;
+};
+
+AABB from_pos_size(vec3 pos, vec3 size) {
+    AABB cube;
+    cube.min = pos - size;
+    cube.max = pos + size;
+
+    return cube;
+}
+
+vec2 intersectAABB(Ray ray, AABB cube) {
+    vec3 tMin = (cube.min - ray.ro) / ray.rd;
+    vec3 tMax = (cube.max - ray.ro) / ray.rd;
+    vec3 t1 = min(tMin, tMax);
+    vec3 t2 = max(tMin, tMax);
+    float tNear = max(max(t1.x, t1.y), t1.z);
+    float tFar = min(min(t2.x, t2.y), t2.z);
+    return vec2(tNear, tFar);
+}
+
+bool bool_hit(vec2 intersect) {
+    return intersect.x < intersect.y && intersect.y > 0.0;
+}
+
+
+////////////////////////
+/// Bit manipulation ///
+////////////////////////
+
+
+
 
 
 ///////////////////
 /// Raymarching ///
 ///////////////////
 
+
 // test
 
 // Transform 1 @(0.0, 0.0, 3.0) B=2.0x3
-    // cube 0.5x3 @(0.0, 0.0, 0.0)
-    // curcle 0.5 @(1.0, 1.0, 0.0)
+    // cube 0.5x3 @(0.0, 0.0, 0.0)   //s1
+    // sphere 0.5 @(1.0, 1.0, 0.0)   //s2
 
 // Transform 2 @(1.0, -1.0, 2.0) B=2.0x3
-    // cube 0.5x3 @(0.0, 0.0, 0.0) lone box
-    // mandlebulb 0.5 scale = 0.5 @(1.0, 1.0, 0.0) lone box pow (8.0 + sin(s.time * 0.6) * 4.0)
+    // cube 0.5x3 @(0.0, 0.0, 0.0) lone box   //s3
+    // mandelbulb 0.5 scale = 0.5 @(1.0, 1.0, 0.0) lone box pow (8.0 + sin(s.time * 0.6) * 4.0)   //s4
+
+// Transform 3 @(-1.0, 0.0, 1.0) B=2.0x3
+    // mandelbulb 0.5 scale = 0.5 @(0.0, 0.0, 0.0) pow (8.0 + sin(s.time * 0.6) * 4.0)   //s5
+    // mandelbulb 0.5 scale = 0.5 @(1.0, 1.0, 0.0) pow (8.0 + sin(s.time * 0.6) * 4.0)   //s6
+
+// mandlebulbs have a size of 2 unless scaled down
 
 
 
 
 
+
+
+#define CHECKS bool[6]
+
+CHECKS aabb_simple_array_bounds_checker(Ray ray) {
+    CHECKS checks = CHECKS(false, false, false, false, false, false);
+
+    // transform 1
+    vec3 t1tr = vec3(0.0, 0.0, 3.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(2.0))))) {
+        checks[0] = (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5)))));  //s1
+        checks[1] = (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s2
+    }
+
+    // transform 2
+    vec3 t2tr = vec3(1.0, -1.0, 2.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
+        checks[2] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5)))));  //s3
+        checks[3] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s4
+    }
+
+    // transform 3
+    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
+        checks[4] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5)))));  //s5
+        checks[5] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s6
+    }
+
+    return checks;
+}
+
+float aabb_simple_array_debug(Ray ray) {
+    int count = 0;
+
+    // Transform 1
+    vec3 t1tr = vec3(0.0, 0.0, 3.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(2.0))))) {
+        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s1
+        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s2
+    }
+
+    // Transform 2
+    vec3 t2tr = vec3(1.0, -1.0, 2.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
+        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s3
+        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s4
+    }
+
+    // Transform 3
+    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
+        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s5
+        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+            count += 1;
+        }  // s6
+    }
+
+    return float(count) / 6.0;
+}
+
+Hit map_simple_array_bounds_checker(vec3 p_in, CHECKS checks) {
+    Hit back = Hit(100000.0);
+    vec3 t = p_in;
+
+    // Transform 1
+    if (checks[0] || checks[1]) {
+        Hit u1 = back;
+        vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+        {
+            if (checks[0]) {
+                vec3 u1s1t = u1t;
+                u1s1t = move(u1s1t, vec3(0.0));
+
+                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+                u1 = opUnion(u1, u1s1);
+            }
+
+            if (checks[1]) {
+                vec3 u1s2t = u1t;
+                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
+
+                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
+                u1 = opUnion(u1, u1s2);
+            }
+        }
+
+        back = opUnion(back, u1);
+    }
+
+    // Transform 2
+    if (checks[2] || checks[3]) {
+        Hit u2 = back;
+        vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
+        {
+            if (checks[2]) {
+                vec3 u2s1t = u2t;
+                u2s1t = move(u2s1t, vec3(0.0));
+
+                Hit u2s1 = Hit(sdCube(u2s1t, vec3(0.5)));
+                u2 = opUnion(u2, u2s1);
+            }
+
+            if (checks[3]) {
+                vec3 u2s2t = u2t;
+                u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                u2 = opUnion(u2, u2s2);
+            }
+        }
+
+        back = opUnion(back, u2);
+    }
+
+    // Transform 3
+    if (checks[4] || checks[5]) {
+        Hit u3 = back;
+        vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+        {
+            if (checks[4]) {
+                vec3 u3s1t = u3t;
+                u3s1t = move(u3s1t, vec3(0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                u3 = opUnion(u3, u3s1);
+            }
+
+            if (checks[5]) {
+                vec3 u3s2t = u3t;
+                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                u3 = opUnion(u3, u3s2);
+            }
+        }
+
+        back = opUnion(back, u3);
+    }
+
+    return back;
+}
+
+vec4 cast_simple_array_bounds_checker(Ray ray) {
+    CHECKS checks = aabb_simple_array_bounds_checker(ray);
+
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map_simple_array_bounds_checker(p, checks);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+    }
+
+    float debug_col = aabb_simple_array_debug(ray);
+
+    return vec4(t * 0.2, vec2(debug_col), 1.0);
+}
+
+
+
+// kinda shit
+Hit map_simple_sdf_bounds(vec3 p_in) {
+    Hit back = Hit(100000.0);
+    vec3 t = p_in;
+
+    // Transform 1
+    {
+        Hit u1 = back;
+        vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+        if (sdSphere(u1t, 2.5) < 0.1) {
+            {
+                vec3 u1s1t = u1t;
+                u1s1t = move(u1s1t, vec3(0.0));
+
+                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+                u1 = opUnion(u1, u1s1);
+            }
+
+            {
+                vec3 u1s2t = u1t;
+                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
+
+                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
+                u1 = opUnion(u1, u1s2);
+            }
+        }
+
+        back = opUnion(back, u1);
+    }
+
+    // Transform 2
+    {
+        Hit u2 = back;
+        vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
+
+        if (sdSphere(u2t, 2.5) < 0.1) {
+            {
+                vec3 u2s1t = u2t;
+                u2s1t = move(u2s1t, vec3(0.0));
+
+                Hit u2s1 = Hit(sdCube(u2s1t, vec3(0.5)));
+                u2 = opUnion(u2, u2s1);
+            }
+
+            {
+                vec3 u2s2t = u2t;
+                u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u2s2 = Hit(
+                sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                );
+                u2 = opUnion(u2, u2s2);
+            }
+        }
+
+        back = opUnion(back, u2);
+    }
+
+    // Transform 3
+    {
+        Hit u3 = back;
+        vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+
+        if (sdSphere(u3t, 2.5) < 0.1) {
+            {
+                vec3 u3s1t = u3t;
+                u3s1t = move(u3s1t, vec3(0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s1 = Hit(
+                sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                );
+                u3 = opUnion(u3, u3s1);
+            }
+
+            {
+                vec3 u3s2t = u3t;
+                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s2 = Hit(
+                sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                );
+                u3 = opUnion(u3, u3s2);
+            }
+        }
+
+        back = opUnion(back, u3);
+    }
+
+    return back;
+}
+
+Hit cast_simple_sdf_bounds(Ray ray) {
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map_simple_sdf_bounds(p);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+    }
+    return Hit(t);
+}
+
+
+// 350-380
 Hit map_brute_force(vec3 p_in) {
     Hit back = Hit(100000.0);
     vec3 t = p_in;
@@ -212,13 +541,44 @@ Hit map_brute_force(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u2s2 = Hit(
-                    sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
                 );
                 u2 = opUnion(u2, u2s2);
             }
         }
 
         back = opUnion(back, u2);
+    }
+
+    // Transform 3
+    {
+        Hit u3 = back;
+        vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+        {
+            {
+                vec3 u3s1t = u3t;
+                u3s1t = move(u3s1t, vec3(0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s1 = Hit(
+                sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                );
+                u3 = opUnion(u3, u3s1);
+            }
+
+            {
+                vec3 u3s2t = u3t;
+                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
+
+                float scale = 1.0 / 0.5;
+                Hit u3s2 = Hit(
+                sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                );
+                u3 = opUnion(u3, u3s2);
+            }
+        }
+
+        back = opUnion(back, u3);
     }
 
     return back;
@@ -241,23 +601,23 @@ Hit cast_ray_brute_force(Ray ray) {
 ////////////////////
 /// Pathtraceing ///
 ////////////////////
-const int mode = 0;
-
 vec4 pathtrace(Ray ray) {
     vec4 back;
+    Hit test;
 
-    switch (mode) {
+    switch (s.mode) {
         case 0:
-            Hit test = cast_ray_brute_force(ray);
-            back = vec4(vec3(test.d * 0.2), 1.0);
+            test = cast_ray_brute_force(ray);
+            back = vec4(vec2(test.d * 0.2), 0.0, 1.0);
             break;
 
         case 1:
-            // Code for case 1
+            test = cast_simple_sdf_bounds(ray);
+            back = vec4(vec2(test.d * 0.2), 1.0, 1.0);
             break;
 
         case 2:
-            // Code for case 2
+            back = cast_simple_array_bounds_checker(ray);
             break;
 
         default:

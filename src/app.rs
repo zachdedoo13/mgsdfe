@@ -84,7 +84,7 @@ impl MehApp {
       let render_settings = &mut get!(RENDER_SETTINGS);
       render_settings.path_tracer_uniform_settings.time = get!(TIME).start_time.elapsed().as_secs_f32();
 
-      self.meh_renderer.update(render_pack, &render_settings)
+      self.meh_renderer.update(render_pack, render_settings)
    }
 
    fn render(&mut self, render_pack: &RenderPack<'_>) {
@@ -466,12 +466,16 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
       ui.label("raymarch settings");
       ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.steps_per_ray));
 
-      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.start_eps).speed(0.001).prefix("start_eps"));
+      ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.mode).speed(0.1).prefix("start_eps"));
       ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.max_dist).speed(0.001).prefix("max_dist"));
       ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.relaxation).speed(0.001).prefix("relaxation"));
       ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.step_scale_factor).speed(0.001).prefix("step_scale_factor"));
       ui.add(DragValue::new(&mut rs.path_tracer_uniform_settings.eps_scale).speed(0.001).prefix("eps_scale"));
    }); // raymarch
+
+   if ui.button("remake pipeline").clicked() {
+      rs.remake_pipeline = true;
+   }
 
    save_persisted!(ctx, "render_settings", *rs);
 }

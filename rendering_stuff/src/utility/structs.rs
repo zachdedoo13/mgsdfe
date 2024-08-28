@@ -272,6 +272,8 @@ pub struct RenderSettings {
 
    pub maintain_aspect_ratio: bool,
 
+   pub remake_pipeline: bool,
+
    pub path_tracer_uniform_settings: PathTracerUniformSettings,
 }
 
@@ -283,6 +285,7 @@ impl Default for RenderSettings {
 
          maintain_aspect_ratio: true,
 
+         remake_pipeline: false,
          path_tracer_uniform_settings: PathTracerUniformSettings::default(),
       }
    }
@@ -301,7 +304,7 @@ pub struct PathTracerUniformSettings {
    pub bounces: i32,
    pub fov: f32,
 
-   pub start_eps: f32,
+   pub mode: i32,
    pub max_dist: f32,
    pub relaxation: f32,
    pub step_scale_factor: f32,
@@ -324,7 +327,7 @@ impl Default for PathTracerUniformSettings {
          bounces: 8,
          fov: 90.0,
 
-         start_eps: 0.001,
+         mode: 0,
          max_dist: 16.0,
          relaxation: 1.021,
          step_scale_factor: 1.137,

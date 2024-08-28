@@ -1,6 +1,7 @@
 use std::borrow::Cow;
-use std::iter;
+use std::{fs, iter, panic};
 use std::mem::size_of;
+use std::panic::AssertUnwindSafe;
 use bytemuck::bytes_of;
 use egui::{Image, Ui, Vec2};
 use egui::load::SizedTexture;
@@ -13,83 +14,34 @@ use crate::inbuilt::vertex_package::{Vertex, VertexPackage};
 use crate::utility::structs::{DualStorageTexturePackage, EguiTexturePackage, PathTracerUniformSettings, RenderPack, RenderSettings, StorageTexturePackage};
 
 pub struct MehRenderer {
-   #[allow(dead_code)]
-   path_tracer_pipeline_layout: PipelineLayout,
-
-   path_tracer_pipeline: ComputePipeline,
-   path_tracer_textures: DualStorageTexturePackage,
-   path_tracer_uniform: PathTracerUniform,
-   //
-   // post_process_pipeline: RenderPipeline,
-   // post_process_texture: StorageTexturePackage,
-
+   path_trace_package: PathTracePackage,
    display_texture: EguiTexturePackage,
    display_texture_pipeline: RenderTexturePipeline,
 }
 
 impl MehRenderer {
    pub fn new(device: &Device, renderer: &mut Renderer, render_settings: &RenderSettings) -> Self {
-      // Path tracer
-      let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::default().path_tracer_uniform_settings);
-
-      let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
-      let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
-      let path_tracer_textures = DualStorageTexturePackage::new(one, two);
-      let refs = path_tracer_textures.pull_both();
-
-      let path_tracer_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-         label: Some("path_tracer_pipeline_layout"),
-         bind_group_layouts: &[
-            &refs.read.read_bind_group_layout,
-            &refs.write.write_bind_group_layout,
-            &path_tracer_uniform.layout,
-         ],
-         push_constant_ranges: &[],
-      });
-
-      let shader_module = load_shader(device, String::new());
-
-      let path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
-         label: Some("path_tracer_pipeline"),
-         layout: Some(&path_tracer_pipeline_layout),
-         module: &shader_module,
-         entry_point: "main",
-         compilation_options: Default::default(),
-      });
-
+      let path_trace_package = PathTracePackage::new(device, render_settings);
 
       // display texture
-
       let display_texture = EguiTexturePackage::new(Extent3d {
          width: 250,
          height: 250,
          depth_or_array_layers: 1,
       }, device, renderer);
 
-      let display_texture_pipeline = RenderTexturePipeline::new(device, &refs.read);
+      let display_texture_pipeline = RenderTexturePipeline::new(device, &path_trace_package.path_tracer_textures.pull_read());
 
       Self {
-         path_tracer_pipeline_layout,
-         path_tracer_pipeline,
-         path_tracer_textures,
-         path_tracer_uniform,
-
+         path_trace_package,
          display_texture,
          display_texture_pipeline,
       }
    }
 
-   pub fn update(&mut self, render_pack: &mut RenderPack<'_>, render_settings: &RenderSettings) {
+   pub fn update(&mut self, render_pack: &mut RenderPack<'_>, render_settings: &mut RenderSettings) {
       self.display_texture.update(render_pack);
-
-      let check = {
-         let rs = render_settings;
-         (rs.width, rs.height)
-      };
-
-      self.path_tracer_uniform.update_with_data(&render_pack.queue, render_settings.path_tracer_uniform_settings);
-
-      self.path_tracer_textures.update(&render_pack.device, check);
+      self.path_trace_package.update(render_pack, render_settings);
    }
 
    pub fn render_pass(&mut self, render_pack: &RenderPack<'_>) {
@@ -98,8 +50,8 @@ impl MehRenderer {
       });
 
       {
-         self.compute_pass(&mut encoder);
-         self.display_texture_pipeline.render_pass(&mut encoder, &self.display_texture.view, &self.path_tracer_textures.pull_read());
+         self.path_trace_package.pass(&mut encoder);
+         self.display_texture_pipeline.render_pass(&mut encoder, &self.display_texture.view, &self.path_trace_package.path_tracer_textures.pull_read());
       }
 
       render_pack.queue.submit(iter::once(encoder.finish()));
@@ -140,41 +92,11 @@ impl MehRenderer {
          )
       );
    }
-
-
-   // passes
-   fn compute_pass(&mut self, encoder: &mut CommandEncoder) {
-      let refs = self.path_tracer_textures.pull_both();
-
-      {
-         let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
-            label: Some("path_tracer_pipeline"),
-            timestamp_writes: None,
-         });
-
-         compute_pass.set_pipeline(&self.path_tracer_pipeline);
-
-         // bind groups
-         compute_pass.set_bind_group(0, &refs.read.read_bind_group, &[]);
-         compute_pass.set_bind_group(1, &refs.write.write_bind_group, &[]);
-         compute_pass.set_bind_group(2, &self.path_tracer_uniform.bind_group, &[]);
-
-         let size = refs.read.size;
-         let wg = 16;
-         compute_pass.dispatch_workgroups(
-            (size.width as f32 / wg as f32).ceil() as u32,
-            (size.height as f32 / wg as f32).ceil() as u32,
-            1,
-         );
-      } // `compute_pass` is dropped here
-
-      // Perform the flip after the immutable borrows are done
-      self.path_tracer_textures.flip();
-   }
 }
 
 fn load_shader(device: &Device, _map: String) -> ShaderModule {
-   let source = include_str!("shaders/path_tracer.glsl").to_string();
+   // let source = include_str!("shaders/path_tracer.glsl").to_string();
+   let source = fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
@@ -367,3 +289,101 @@ pub fn to_extent(vec2: Vec2) -> Extent3d {
 }
 
 
+pub struct PathTracePackage {
+   path_tracer_pipeline_layout: PipelineLayout,
+   path_tracer_pipeline: ComputePipeline,
+   path_tracer_textures: DualStorageTexturePackage,
+   path_tracer_uniform: PathTracerUniform,
+}
+
+impl PathTracePackage {
+   pub fn new(device: &Device, render_settings: &RenderSettings) -> Self {
+      let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::default().path_tracer_uniform_settings);
+
+      let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
+      let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
+      let path_tracer_textures = DualStorageTexturePackage::new(one, two);
+      let refs = path_tracer_textures.pull_both();
+
+      let path_tracer_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+         label: Some("path_tracer_pipeline_layout"),
+         bind_group_layouts: &[
+            &refs.read.read_bind_group_layout,
+            &refs.write.write_bind_group_layout,
+            &path_tracer_uniform.layout,
+         ],
+         push_constant_ranges: &[],
+      });
+
+      let shader_module = load_shader(device, String::new());
+
+      let path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
+         label: Some("path_tracer_pipeline"),
+         layout: Some(&path_tracer_pipeline_layout),
+         module: &shader_module,
+         entry_point: "main",
+         compilation_options: Default::default(),
+      });
+
+      Self {
+         path_tracer_pipeline_layout,
+         path_tracer_pipeline,
+         path_tracer_textures,
+         path_tracer_uniform,
+      }
+   }
+
+   pub fn update(&mut self, render_pack: &mut RenderPack<'_>, render_settings: &mut RenderSettings) {
+      let check = (render_settings.width, render_settings.height);
+
+      self.path_tracer_uniform.update_with_data(&render_pack.queue, render_settings.path_tracer_uniform_settings);
+      self.path_tracer_textures.update(&render_pack.device, check);
+
+      if render_settings.remake_pipeline {
+         self.remake_pipeline(&render_pack.device);
+         render_settings.remake_pipeline = false;
+      }
+   }
+
+   pub fn pass(&mut self, encoder: &mut CommandEncoder) {
+      let refs = self.path_tracer_textures.pull_both();
+
+      {
+         let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
+            label: Some("path_tracer_pipeline"),
+            timestamp_writes: None,
+         });
+
+         compute_pass.set_pipeline(&self.path_tracer_pipeline);
+
+         // bind groups
+         compute_pass.set_bind_group(0, &refs.read.read_bind_group, &[]);
+         compute_pass.set_bind_group(1, &refs.write.write_bind_group, &[]);
+         compute_pass.set_bind_group(2, &self.path_tracer_uniform.bind_group, &[]);
+
+         let size = refs.read.size;
+         let wg = 16;
+         compute_pass.dispatch_workgroups(
+            (size.width as f32 / wg as f32).ceil() as u32,
+            (size.height as f32 / wg as f32).ceil() as u32,
+            1,
+         );
+      } // `compute_pass` is dropped here
+
+      // Perform the flip after the immutable borrows are done
+      self.path_tracer_textures.flip();
+   }
+
+   fn remake_pipeline(&mut self, device: &Device) {
+      let shader_module = load_shader(device, String::new());
+
+      self.path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
+            label: Some("path_tracer_pipeline"),
+            layout: Some(&self.path_tracer_pipeline_layout),
+            module: &shader_module,
+            entry_point: "main",
+            compilation_options: Default::default(),
+         });
+
+   }
+}
