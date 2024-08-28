@@ -206,7 +206,7 @@ bool bool_hit(vec2 intersect) {
 // mandlebulbs have a size of 2 unless scaled down
 
 
-
+#define MBS 8.0
 
 
 
@@ -218,7 +218,7 @@ CHECKS aabb_simple_array_bounds_checker(Ray ray) {
 
     // transform 1
     vec3 t1tr = vec3(0.0, 0.0, 3.0);
-    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(2.0))))) {
+    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
         checks[0] = (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5)))));  //s1
         checks[1] = (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s2
     }
@@ -245,7 +245,8 @@ float aabb_simple_array_debug(Ray ray) {
 
     // Transform 1
     vec3 t1tr = vec3(0.0, 0.0, 3.0);
-    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(2.0))))) {
+    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
+        count += 1;
         if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))) {
             count += 1;
         }  // s1
@@ -257,6 +258,7 @@ float aabb_simple_array_debug(Ray ray) {
     // Transform 2
     vec3 t2tr = vec3(1.0, -1.0, 2.0);
     if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
+//        count += 1;
         if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5))))) {
             count += 1;
         }  // s3
@@ -268,6 +270,7 @@ float aabb_simple_array_debug(Ray ray) {
     // Transform 3
     vec3 t3tr = vec3(-1.0, 0.0, 1.0);
     if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
+//        count += 1;
         if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5))))) {
             count += 1;
         }  // s5
@@ -276,7 +279,7 @@ float aabb_simple_array_debug(Ray ray) {
         }  // s6
     }
 
-    return float(count) / 6.0;
+    return float(count) / 9.0;
 }
 
 Hit map_simple_array_bounds_checker(vec3 p_in, CHECKS checks) {
@@ -326,7 +329,7 @@ Hit map_simple_array_bounds_checker(vec3 p_in, CHECKS checks) {
                 u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
 
                 float scale = 1.0 / 0.5;
-                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, MBS) / scale);
                 u2 = opUnion(u2, u2s2);
             }
         }
@@ -344,7 +347,7 @@ Hit map_simple_array_bounds_checker(vec3 p_in, CHECKS checks) {
                 u3s1t = move(u3s1t, vec3(0.0));
 
                 float scale = 1.0 / 0.5;
-                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, MBS) / scale);
                 u3 = opUnion(u3, u3s1);
             }
 
@@ -353,7 +356,7 @@ Hit map_simple_array_bounds_checker(vec3 p_in, CHECKS checks) {
                 u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
 
                 float scale = 1.0 / 0.5;
-                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0) / scale);
+                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, MBS) / scale);
                 u3 = opUnion(u3, u3s2);
             }
         }
@@ -377,7 +380,8 @@ vec4 cast_simple_array_bounds_checker(Ray ray) {
         if (t > FP) break;
     }
 
-    float debug_col = aabb_simple_array_debug(ray);
+//    float debug_col = aabb_simple_array_debug(ray);
+    float debug_col = 0.0;
 
     return vec4(t * 0.2, vec2(debug_col), 1.0);
 }
@@ -434,7 +438,7 @@ Hit map_simple_sdf_bounds(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u2s2 = Hit(
-                sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u2s2t * scale, MBS) / scale
                 );
                 u2 = opUnion(u2, u2s2);
             }
@@ -455,7 +459,7 @@ Hit map_simple_sdf_bounds(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u3s1 = Hit(
-                sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u3s1t * scale, MBS ) / scale
                 );
                 u3 = opUnion(u3, u3s1);
             }
@@ -466,7 +470,7 @@ Hit map_simple_sdf_bounds(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u3s2 = Hit(
-                sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u3s2t * scale, MBS) / scale
                 );
                 u3 = opUnion(u3, u3s2);
             }
@@ -541,7 +545,7 @@ Hit map_brute_force(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u2s2 = Hit(
-                sdMandelbulb(u2s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u2s2t * scale, MBS) / scale
                 );
                 u2 = opUnion(u2, u2s2);
             }
@@ -561,7 +565,7 @@ Hit map_brute_force(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u3s1 = Hit(
-                sdMandelbulb(u3s1t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u3s1t * scale, MBS) / scale
                 );
                 u3 = opUnion(u3, u3s1);
             }
@@ -572,7 +576,7 @@ Hit map_brute_force(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u3s2 = Hit(
-                sdMandelbulb(u3s2t * scale, 8.0 + sin(s.time * 0.6) * 4.0 ) / scale
+                sdMandelbulb(u3s2t * scale, MBS) / scale
                 );
                 u3 = opUnion(u3, u3s2);
             }
