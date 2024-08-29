@@ -3,7 +3,7 @@ use std::{fs, iter, panic};
 use std::mem::size_of;
 use std::panic::AssertUnwindSafe;
 use bytemuck::bytes_of;
-use egui::{Image, Ui, Vec2};
+use egui::{Image, Key, PointerButton, Pos2, Sense, Ui, Vec2};
 use egui::load::SizedTexture;
 use egui_wgpu::Renderer;
 use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, Color, CommandEncoder, CommandEncoderDescriptor, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, Extent3d, IndexFormat, PipelineLayout, PipelineLayoutDescriptor, Queue, RenderPipeline, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat, TextureView};
@@ -57,7 +57,7 @@ impl MehRenderer {
       render_pack.queue.submit(iter::once(encoder.finish()));
    }
 
-   pub fn display(&mut self, ui: &mut Ui, render_settings: &RenderSettings) {
+   pub fn display(&mut self, ui: &mut Ui, render_settings: &mut RenderSettings) {
       let max = to_extent(ui.available_size());
       let mut ms = max;
 
@@ -80,7 +80,7 @@ impl MehRenderer {
 
       self.display_texture.size = ms;
 
-      ui.add(
+      let response = ui.add(
          Image::from_texture(
             SizedTexture::new(
                self.display_texture.texture_id,
@@ -89,8 +89,77 @@ impl MehRenderer {
                   self.display_texture.texture.size().height as f32,
                ),
             )
-         )
+         ).sense(Sense::click_and_drag())
       );
+
+      let mut cd: &mut [f32; 3] = &mut render_settings.path_tracer_uniform_settings.cam_dir;
+
+      if response.dragged_by(PointerButton::Secondary) {
+         let delta = ui.input(|i| i.pointer.delta()) * 0.005;
+
+         cd[1] -= delta.x;
+         cd[0] -= delta.y;
+      }
+      if response.dragged_by(PointerButton::Primary) {
+         let delta = ui.input(|i| i.pointer.delta()) * 0.005;
+
+         cd[2] += delta.x;
+      }
+
+      let speed = 0.01;
+      ui.input(|i| {
+         let pos = &mut render_settings.path_tracer_uniform_settings.cam_pos;
+
+         // Calculate forward, right, and up vectors
+         let forward = [
+            cd[1].cos() * cd[0].cos(),
+            cd[0].sin(),
+            cd[1].sin() * cd[0].cos(),
+         ];
+         let right = [
+            cd[1].sin(),
+            0.0,
+            -cd[1].cos(),
+         ];
+         let up = [
+            -cd[0].sin() * cd[1].cos(),
+            cd[0].cos(),
+            -cd[0].sin() * cd[1].sin(),
+         ];
+
+         if i.key_down(Key::D) {
+            pos[0] += forward[0] * speed;
+            pos[1] += forward[1] * speed;
+            pos[2] += forward[2] * speed;
+         }
+         if i.key_down(Key::A) {
+            pos[0] -= forward[0] * speed;
+            pos[1] -= forward[1] * speed;
+            pos[2] -= forward[2] * speed;
+         }
+         if i.key_down(Key::W) {
+            pos[0] -= right[0] * speed;
+            pos[1] -= right[1] * speed;
+            pos[2] -= right[2] * speed;
+         }
+         if i.key_down(Key::S) {
+            pos[0] += right[0] * speed;
+            pos[1] += right[1] * speed;
+            pos[2] += right[2] * speed;
+         }
+         if i.key_down(Key::Q) {
+            pos[0] -= up[0] * speed;
+            pos[1] -= up[1] * speed;
+            pos[2] -= up[2] * speed;
+         }
+         if i.key_down(Key::E) {
+            pos[0] += up[0] * speed;
+            pos[1] += up[1] * speed;
+            pos[2] += up[2] * speed;
+         }
+      });
+
+      println!("{cd:?}");
    }
 }
 

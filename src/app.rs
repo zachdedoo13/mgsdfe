@@ -64,7 +64,10 @@ impl MehApp {
          get!(RENDER_SETTINGS).height = h;
       } // init aspect of shader
       {
-         get!(RENDER_SETTINGS) = load_persisted!(ctx, "render_settings", RenderSettings::default())
+         let rs = &mut load_persisted!(ctx, "render_settings", RenderSettings::default());
+         rs.path_tracer_uniform_settings.cam_dir = [0.0, 0.0, 0.0];
+
+         get!(RENDER_SETTINGS) = *rs;
       }
 
 
@@ -153,7 +156,7 @@ impl MehApp {
                     // content
                     CentralPanel::default()
                         .show_inside(ui, |ui| {
-                           self.meh_renderer.display(ui, &get!(RENDER_SETTINGS));
+                           self.meh_renderer.display(ui, &mut get!(RENDER_SETTINGS));
                         });
                  });
           });

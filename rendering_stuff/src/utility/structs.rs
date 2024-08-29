@@ -311,7 +311,7 @@ pub struct PathTracerUniformSettings {
    pub eps_scale: f32,
 
    pub cam_pos: [f32; 3],
-   // pub cam_dir: [f32; 3],
+   pub cam_dir: [f32; 3],
 }
 
 impl Default for PathTracerUniformSettings {
@@ -335,7 +335,7 @@ impl Default for PathTracerUniformSettings {
 
 
          cam_pos: [0.0, 0.0, 0.0],
-         // cam_dir: [0.0, 0.0, 0.0],
+         cam_dir: [1.0, 2.0, 3.0],
          //
          // buffer: [0.0; 2],
       }

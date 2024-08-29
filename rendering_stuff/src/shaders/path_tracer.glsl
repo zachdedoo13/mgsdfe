@@ -25,6 +25,10 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
     float pos_x;
     float pos_y;
     float pos_z;
+
+    float rot_x;
+    float rot_y;
+    float rot_z;
 } s;
 
 struct Ray { vec3 ro; vec3 rd; };
@@ -133,6 +137,42 @@ vec3 rot3D(vec3 p, vec3 rot) {
     p = rotZ * p;
 
     return p;
+}
+
+vec3 rotateRayDirection(vec3 direction, vec3 rotation) {
+    // Rotation around X-axis
+    float cosX = cos(rotation.x);
+    float sinX = sin(rotation.x);
+    mat3 rotX = mat3(
+    1.0, 0.0, 0.0,
+    0.0, cosX, -sinX,
+    0.0, sinX, cosX
+    );
+
+    // Rotation around Y-axis
+    float cosY = cos(rotation.y);
+    float sinY = sin(rotation.y);
+    mat3 rotY = mat3(
+    cosY, 0.0, sinY,
+    0.0, 1.0, 0.0,
+    -sinY, 0.0, cosY
+    );
+
+    // Rotation around Z-axis
+    float cosZ = cos(rotation.z);
+    float sinZ = sin(rotation.z);
+    mat3 rotZ = mat3(
+    cosZ, -sinZ, 0.0,
+    sinZ, cosZ, 0.0,
+    0.0, 0.0, 1.0
+    );
+
+    // Apply rotations
+    direction = rotX * direction;
+    direction = rotY * direction;
+    direction = rotZ * direction;
+
+    return direction;
 }
 
 
@@ -636,6 +676,8 @@ vec4 pathtrace(Ray ray) {
 
 
 
+
+
 void main() {
     ivec2 gl_uv = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dimentions = imageSize(read_tex);
@@ -652,6 +694,9 @@ void main() {
         vec3(s.pos_x, s.pos_y, s.pos_z),
         normalize(vec3(uv, 1.0))
     );
+
+    // Usage
+    ray.rd = rotateRayDirection(ray.rd, vec3(s.rot_x, s.rot_y, s.rot_z));
 
 
     // path traceing
