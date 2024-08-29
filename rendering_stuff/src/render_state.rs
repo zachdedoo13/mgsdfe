@@ -1,7 +1,6 @@
 use std::borrow::Cow;
-use std::{fs, iter, panic};
+use std::{iter};
 use std::mem::size_of;
-use std::panic::AssertUnwindSafe;
 use bytemuck::bytes_of;
 use egui::{Image, Key, PointerButton, Pos2, Sense, Ui, Vec2};
 use egui::load::SizedTexture;
@@ -164,8 +163,8 @@ impl MehRenderer {
 }
 
 fn load_shader(device: &Device, _map: String) -> ShaderModule {
-   // let source = include_str!("shaders/path_tracer.glsl").to_string();
-   let source = fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
+   let source = include_str!("shaders/path_tracer.glsl").to_string();
+   // let source = fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
