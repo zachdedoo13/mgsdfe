@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::{iter};
 use std::mem::size_of;
+use std::panic::AssertUnwindSafe;
 use bytemuck::bytes_of;
 use egui::{Image, Key, PointerButton, Pos2, Sense, Ui, Vec2};
 use egui::load::SizedTexture;
@@ -157,14 +158,12 @@ impl MehRenderer {
             pos[2] += up[2] * speed;
          }
       });
-
-      println!("{cd:?}");
    }
 }
 
-fn load_shader(device: &Device, _map: String) -> ShaderModule {
-   let source = include_str!("shaders/path_tracer.glsl").to_string();
-   // let source = fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
+fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
+   // let source = include_str!("shaders/path_tracer.glsl").to_string();
+   let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
@@ -175,7 +174,27 @@ fn load_shader(device: &Device, _map: String) -> ShaderModule {
       },
    };
 
-   device.create_shader_module(shader_mod)
+   std::panic::set_hook(Box::new(|panic_info| {
+      if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+         eprintln!("Panic occurred");
+      } else {
+         eprintln!("Panic occurred");
+      }
+   }));
+
+   let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
+      device.create_shader_module(shader_mod)
+   }));
+
+   if let Ok(_) = out {
+      println!("Compiled")
+   }
+
+   out
+}
+
+fn test() {
+   panic!("test");
 }
 
 
@@ -383,7 +402,7 @@ impl PathTracePackage {
          push_constant_ranges: &[],
       });
 
-      let shader_module = load_shader(device, String::new());
+      let shader_module = load_shader(device, String::new()).unwrap();
 
       let path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
          label: Some("path_tracer_pipeline"),
@@ -445,13 +464,16 @@ impl PathTracePackage {
    fn remake_pipeline(&mut self, device: &Device) {
       let shader_module = load_shader(device, String::new());
 
-      self.path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
+      if let Ok(sm) = shader_module {
+         self.path_tracer_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
             label: Some("path_tracer_pipeline"),
             layout: Some(&self.path_tracer_pipeline_layout),
-            module: &shader_module,
+            module: &sm,
             entry_point: "main",
             compilation_options: Default::default(),
          });
+      }
+
 
    }
 }

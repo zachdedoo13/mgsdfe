@@ -34,7 +34,7 @@ fn main() -> eframe::Result {
         vsync: false,
         wgpu_options: WgpuConfiguration {
             present_mode: Immediate,
-            power_preference: eframe::wgpu::PowerPreference::HighPerformance,
+            power_preference: wgpu::PowerPreference::HighPerformance,
             device_descriptor: device_descriptor_fn,
             ..Default::default()
         },
@@ -43,6 +43,7 @@ fn main() -> eframe::Result {
             .with_min_inner_size([300.0, 220.0]),
         ..Default::default()
     };
+
     eframe::run_native(
         "eframe template",
         native_options,

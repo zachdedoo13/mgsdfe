@@ -220,14 +220,22 @@ bool bool_hit(vec2 intersect) {
 /// Bit manipulation ///
 ////////////////////////
 
+void setBoolAtIndex(inout uint data, int index, bool value) {
+    if (value) {
+        data |= (1u << index);  // Set the bit at 'index' to 1
+    } else {
+        data &= ~(1u << index); // Set the bit at 'index' to 0
+    }
+}
 
-
-
+bool getBoolAtIndex(uint data, int index) {
+    return (data & (1u << index)) != 0u; // Check if the bit at 'index' is 1
+}
 
 ///////////////////
 /// Raymarching ///
 ///////////////////
-
+#define MBS 8.0
 
 // test
 
@@ -246,11 +254,419 @@ bool bool_hit(vec2 intersect) {
 // mandlebulbs have a size of 2 unless scaled down
 
 
-#define MBS 8.0
+
+// smart if it can hit it checks
+#define HITSARRAY vec3[6]
+struct Hits { HITSARRAY checks; uint count; };
+
+void sort_aabb_cast(inout Hits hits) {
+    for (int i = 1; i < hits.count; i++) {
+        vec3 key = hits.checks[i];
+        int j = i - 1;
+
+        // Move elements of arr[0..i-1], that are greater than key,
+        // to one position ahead of their current position
+        while (j >= 0 && hits.checks[j].x > key.x) {
+            hits.checks[j + 1] = hits.checks[j];
+            j = j - 1;
+        }
+        hits.checks[j + 1] = key;
+    }
+}
+
+Hits aabb_smart_cast(Ray ray) {
+    Hits hits;
+    hits.count = 0;
+
+    vec3 t1tr = vec3(0.0, 0.0, 3.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
+        vec2 c0 = intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5)));
+        if (bool_hit(c0)) { hits.checks[hits.count] = vec3(c0, 0.0); hits.count += 1; }  // s0
+
+        vec2 c1 = intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5)));
+        if (bool_hit(c1)) { hits.checks[hits.count] = vec3(c1, 1.0); hits.count += 1; }  // s1
+    }
+
+    vec3 t2tr = vec3(1.0, -1.0, 2.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(1.5))))) {
+        vec2 c2 = intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5)));
+        if (bool_hit(c2)) { hits.checks[hits.count] = vec3(c2, 2.0); hits.count += 1; }  // s2
+
+        vec2 c3 = intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5)));
+        if (bool_hit(c3)) { hits.checks[hits.count] = vec3(c3, 3.0); hits.count += 1; }  // s3
+    }
+
+    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
+    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(1.5))))) {
+        vec2 c4 = intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5)));
+        if (bool_hit(c4)) { hits.checks[hits.count] = vec3(c4, 4.0); hits.count += 1; }  // s4
+
+        vec2 c5 = intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5)));
+        if (bool_hit(c5)) { hits.checks[hits.count] = vec3(c5, 5.0); hits.count += 1; }  // s5
+    }
+
+    sort_aabb_cast(hits);
+
+    return hits;
+}
+
+Hit map_smart_aabb(vec3 p_in, float f_index) {
+    Hit back = Hit(100000.0);
+    vec3 t = p_in;
+
+    uint index = uint(f_index);
+    switch (index) {
+        case 0:
+        {
+            Hit u1 = back;
+            vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+            {
+                vec3 u1s1t = u1t;
+                u1s1t = move(u1s1t, vec3(0.0));
+                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+                u1 = opUnion(u1, u1s1);
+            }
+            back = opUnion(back, u1);
+        }
+        break;
+
+        case 1:
+        {
+            Hit u1 = back;
+            vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+            {
+                vec3 u1s2t = u1t;
+                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
+                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
+                u1 = opUnion(u1, u1s2);
+            }
+            back = opUnion(back, u1);
+        }
+        break;
+
+        case 2:
+        {
+            Hit u2 = back;
+            vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
+            {
+                vec3 u2s1t = u2t;
+                u2s1t = move(u2s1t, vec3(0.0));
+                Hit u2s1 = Hit(sdCube(u2s1t, vec3(0.5)));
+                u2 = opUnion(u2, u2s1);
+            }
+            back = opUnion(back, u2);
+        }
+        break;
+
+        case 3:
+        {
+            Hit u2 = back;
+            vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
+            {
+                vec3 u2s2t = u2t;
+                u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
+                float scale = 1.0 / 0.5;
+                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, MBS) / scale);
+                u2 = opUnion(u2, u2s2);
+            }
+            back = opUnion(back, u2);
+        }
+        break;
+
+        case 4:
+        {
+            Hit u3 = back;
+            vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+            {
+                vec3 u3s1t = u3t;
+                u3s1t = move(u3s1t, vec3(0.0));
+                float scale = 1.0 / 0.5;
+                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, MBS) / scale);
+                u3 = opUnion(u3, u3s1);
+            }
+            back = opUnion(back, u3);
+        }
+        break;
+
+        case 5:
+        {
+            Hit u3 = back;
+            vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+            {
+                vec3 u3s2t = u3t;
+                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
+                float scale = 1.0 / 0.5;
+                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, MBS) / scale);
+                u3 = opUnion(u3, u3s2);
+            }
+            back = opUnion(back, u3);
+        }
+        break;
+
+        default:
+        break;
+    }
+
+    return back;
+}
+
+float disclose_index(vec3 data, inout int steps, Ray ray) {
+    float t = data.x;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map_smart_aabb(p, data.z);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+        if (t > data.y) break;
+    }
+
+    return t;
+}
+
+vec4 cast_smart_aabb(Ray ray) {
+    Hits hits = aabb_smart_cast(ray);
+    float t = 100000.0;
+    int steps = 0;
+    uint i = 0;
+    while (i < hits.count) {
+        float disclose = disclose_index(hits.checks[i], steps, ray);
+
+        // if hit in the aabb
+        if (disclose < hits.checks[i].y) {
+            // overlap was invalid
+            if (disclose < t) { t = disclose; }
+
+            // overlap detected
+            if (hits.checks[i].y < hits.checks[i + 1].x) {
+
+            }
+            // no overlap and hit object
+            else {
+                break;
+            }
+        }
+
+        i += 1;
+    }
+
+    return vec4(t * 0.2, vec2(0.0, 1.0), 1.0);
+}
 
 
 
+// bitwise if it can hit it checks
+//#define BITCHECKS uint[1]
+//
+//struct BitChecks {
+//    BITCHECKS data_array;
+//    int count;
+//};
+//
+//void set_aabb(inout BitChecks checks, bool val) {
+//    if (val) {
+//        int array_index = (checks.count / 32);
+//        int index = checks.count - (32 * array_index);
+//
+//        setBoolAtIndex(checks.data_array[array_index], index, val);
+//    }
+//
+//    checks.count += 1;
+//}
+//
+//bool check_bit(BitChecks checks, int i) {
+//    int array_index = (i / 32);
+//    int index = i - (32 * array_index);
+//
+//    return getBoolAtIndex(checks.data_array[array_index], index);
+//}
+//
+//
+//BitChecks bitwise_aabb_simple_array_bounds_checker(Ray ray) {
+//    BitChecks checks;
+//
+//    // transform 1
+//    vec3 t1tr = vec3(0.0, 0.0, 3.0);
+//    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
+//        set_aabb(
+//            checks,
+//            bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))
+//        );
+//
+//        set_aabb(
+//            checks,
+//            bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))
+//        );
+//
+//    }
+//
+//    // transform 2
+////    vec3 t2tr = vec3(1.0, -1.0, 2.0);
+////    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
+////        checks[2] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5)))));  //s3
+////        checks[3] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s4
+////    }
+////
+////    // transform 3
+////    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
+////    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
+////        checks[4] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5)))));  //s5
+////        checks[5] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s6
+////    }
+//
+//    return checks;
+//}
+//
+//float bitwise_aabb_simple_array_debug(Ray ray) {
+//    int count = 0;
+//
+//    // Transform 1
+//    vec3 t1tr = vec3(0.0, 0.0, 3.0);
+//    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
+//        count += 1;
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s1
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s2
+//    }
+//
+//    // Transform 2
+//    vec3 t2tr = vec3(1.0, -1.0, 2.0);
+//    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
+//        //        count += 1;
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s3
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s4
+//    }
+//
+//    // Transform 3
+//    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
+//    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
+//        //        count += 1;
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s5
+//        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
+//            count += 1;
+//        }  // s6
+//    }
+//
+//    return float(count) / 9.0;
+//}
+//
+//Hit bitwise_map_simple_array_bounds_checker(vec3 p_in, BitChecks checks) {
+//    Hit back = Hit(100000.0);
+//    vec3 t = p_in;
+//
+//    // Transform 1
+//    if (check_bit(checks, 0) || check_bit(checks, 1)) {
+//        Hit u1 = back;
+//        vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+//        {
+//            if (check_bit(checks, 0)) {
+//                vec3 u1s1t = u1t;
+//                u1s1t = move(u1s1t, vec3(0.0));
+//
+//                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+//                u1 = opUnion(u1, u1s1);
+//            }
+//
+//            if (check_bit(checks, 1)) {
+//                vec3 u1s2t = u1t;
+//                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
+//
+//                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
+//                u1 = opUnion(u1, u1s2);
+//            }
+//        }
+//
+//        back = opUnion(back, u1);
+//    }
+//
+//    // Transform 2
+////    if (checks[2] || checks[3]) {
+////        Hit u2 = back;
+////        vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
+////        {
+////            if (checks[2]) {
+////                vec3 u2s1t = u2t;
+////                u2s1t = move(u2s1t, vec3(0.0));
+////
+////                Hit u2s1 = Hit(sdCube(u2s1t, vec3(0.5)));
+////                u2 = opUnion(u2, u2s1);
+////            }
+////
+////            if (checks[3]) {
+////                vec3 u2s2t = u2t;
+////                u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
+////
+////                float scale = 1.0 / 0.5;
+////                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, MBS) / scale);
+////                u2 = opUnion(u2, u2s2);
+////            }
+////        }
+////
+////        back = opUnion(back, u2);
+////    }
+////
+////    // Transform 3
+////    if (checks[4] || checks[5]) {
+////        Hit u3 = back;
+////        vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
+////        {
+////            if (checks[4]) {
+////                vec3 u3s1t = u3t;
+////                u3s1t = move(u3s1t, vec3(0.0));
+////
+////                float scale = 1.0 / 0.5;
+////                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, MBS) / scale);
+////                u3 = opUnion(u3, u3s1);
+////            }
+////
+////            if (checks[5]) {
+////                vec3 u3s2t = u3t;
+////                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
+////
+////                float scale = 1.0 / 0.5;
+////                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, MBS) / scale);
+////                u3 = opUnion(u3, u3s2);
+////            }
+////        }
+////
+////        back = opUnion(back, u3);
+////    }
+//
+//    return back;
+//}
+//
+//vec4 bitwise_cast_simple_array_bounds_checker(Ray ray) {
+//    BitChecks checks = bitwise_aabb_simple_array_bounds_checker(ray);
+//
+//    float t = 0.0;
+//    for (int i = 0; i < s.steps_per_ray; i++) {
+//        vec3 p = ray.ro + ray.rd * t;
+//        Hit hit = bitwise_map_simple_array_bounds_checker(p, checks);
+//        t += hit.d;
+//
+//        if (hit.d < MHD) break;
+//        if (t > FP) break;
+//    }
+//
+//    //    float debug_col = aabb_simple_array_debug(ray);
+//    float debug_col = 0.0;
+//
+//    return vec4(t * 0.2, vec2(debug_col), 1.0);
+//}
 
+
+
+// if it can hit it checks
 #define CHECKS bool[6]
 
 CHECKS aabb_simple_array_bounds_checker(Ray ray) {
@@ -664,6 +1080,10 @@ vec4 pathtrace(Ray ray) {
             back = cast_simple_array_bounds_checker(ray);
             break;
 
+        case 3:
+            back = cast_smart_aabb(ray);
+            break;
+
         default:
             // Code for default case
             break;
@@ -697,7 +1117,6 @@ void main() {
 
     // Usage
     ray.rd = rotateRayDirection(ray.rd, vec3(s.rot_x, s.rot_y, s.rot_z));
-
 
     // path traceing
 

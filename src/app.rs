@@ -47,7 +47,6 @@ impl MehApp {
 
       let meh_renderer = MehRenderer::new(device, renderer, &get!(RENDER_SETTINGS));
 
-
       // init
       let ctx = &cc.egui_ctx;
       set_theme(&cc.egui_ctx);
