@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
 use rendering_stuff::render_state::MehRenderer;
 use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
-use crate::{get, init_static, load_persisted, render_pack_from_frame, save_persisted};
+use crate::{get, init_static, load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
 use crate::packages::time_package::TimePackage;
-
+use crate::utility::functions::oss;
 
 // Globals
 init_static!(TIME: TimePackage => {TimePackage::new()});
@@ -279,6 +279,41 @@ fn stats(ctx: &Context, ui: &mut Ui) {
          });
       });
    } // system info
+
+   {
+      let samples = 200;
+
+      let mut freq = load_temp!(ctx, "freq", 1.0);
+      let mut amp = load_temp!(ctx, "amp", 1.0);
+      let mut phase = load_temp!(ctx, "phase", 1.0);
+
+      let mut data: Vec<[f64; 2]> = vec![];
+      for i in 0..samples {
+         let rf = i as f64 / samples as f64;
+
+         data.push([i as f64, oss(rf, freq, amp, phase)])
+      }
+
+      ui.add(DragValue::new(&mut freq).prefix("freq").speed(0.05));
+      ui.add(DragValue::new(&mut amp).prefix("amp").speed(0.05));
+      ui.add(DragValue::new(&mut phase).prefix("phase").speed(0.05));
+
+      let line = Line::new(data);
+      Plot::new("my_plot")
+          .view_aspect(2.0)
+          .allow_drag(false)
+          .allow_scroll(false)
+          .allow_zoom(false)
+          .allow_boxed_zoom(false)
+          .show_axes(Vec2b::new(false, true))
+          .show(ui, |plot_ui| plot_ui.line(line));
+
+
+      save_temp!(ctx, "freq", freq);
+      save_temp!(ctx, "amp", amp);
+      save_temp!(ctx, "phase", phase);
+
+   } // test
 }
 
 
