@@ -226,118 +226,112 @@ impl Passer<'_> {
       "#).as_str()
       });
 
-
       // disclose functions
       #[derive(Debug)]
       struct Parcel {
          upper_union: String,
          upper_union_comb: Combination,
-
          upper_transform: String,
-
          depth: i32,
          u_index: i32,
       }
 
+      fn disclose_shape(transform: &Transform, sdf: &SDF, parcel: &Parcel) -> String {
+         let depth = parcel.depth;
+         let u_index = parcel.u_index;
+         let name = format!("d{depth}s{u_index}");
+
+         let trans_name = format!("d{depth}u{}t", parcel.u_index);
+         let trans = transform.comp_map(trans_name.clone(), parcel.upper_transform.clone());
+         let trans = add_tabs_to_string(trans.as_str(), 3);
+         let scale_cleanup = transform.scale_correction(name.clone());
+
+         let sd = sdf.comp_map(trans_name);
+
+         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
+
+         let out = format!(r#"
+         // shape
+         {{
+            {trans}
+
+            Hit {name} = Hit({sd});
+
+            // cleanup
+            {scale_cleanup}
+            {close}
+         }}
+
+         "#);
+
+         add_tabs_to_string(out.as_str(), depth as usize)
+      }
+
+      fn disclose_union(transform: &Transform, combination: &Combination, children: &[Layer], parcel: &Parcel) -> String {
+         let depth = parcel.depth;
+         let u_index = parcel.u_index;
+         let name = format!("d{depth}u{u_index}");
+
+         let up = &parcel.upper_union;
+
+         let trans_name = format!("d{depth}u{}t", parcel.u_index);
+         let trans = transform.comp_map(trans_name.clone(), parcel.upper_transform.clone());
+         let trans = add_tabs_to_string(trans.as_str(), 3);
+         let scale_cleanup = transform.scale_correction(name.clone());
+
+         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
+
+         let mut childs = String::new();
+         for (i, child) in children.iter().enumerate() {
+            childs.push_str(disclose_layer(child, &Parcel {
+               upper_union: name.clone(),
+               upper_union_comb: combination.clone(),
+               upper_transform: trans_name.clone(),
+               depth: depth + 1,
+               u_index: i as i32,
+            }).as_str());
+            childs.push('\n');
+         };
+
+         let out = format!(r#"
+         // union
+         {{
+            // init and transform
+            Hit d{depth}u{u_index} = {up};
+            {trans}
+
+            // children
+            {{
+               {childs}
+            }}
+
+            // cleanup
+            {scale_cleanup}
+            {close}
+         }}
+         "#);
+
+         add_tabs_to_string(out.as_str(), depth as usize)
+      }
+
       fn disclose_layer(layer: &Layer, parcel: &Parcel) -> String {
-         let out: String = match layer {
+         match layer {
             Layer::Shape {
                transform,
-               material: _material,
-               bounds: _bounds,
+               material: _,
+               bounds: _,
                sdf,
-            } => {
-               let depth = parcel.depth;
-               let u_index = parcel.u_index;
-               let name = format!("d{depth}s{u_index}");
-
-               let trans_name = format!("d{depth}u{}t", parcel.u_index);
-               let trans = transform.comp_map(trans_name.clone(), parcel.upper_transform.clone());
-               let trans = add_tabs_to_string(trans.as_str(), 3);
-               let scale_cleanup = transform.scale_correction(name.clone());
-
-               let sd = sdf.comp_map(trans_name);
-
-               let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
-
-
-               let out = format!(r#"
-               // shape
-               {{
-                  {trans}
-
-                  Hit {name} = Hit({sd});
-
-                  // cleanup
-                  {scale_cleanup}
-                  {close}
-
-               }}
-
-               "#);
-
-
-               add_tabs_to_string(out.as_str(), depth as usize)
-            }
+            } => disclose_shape(transform, sdf, parcel),
 
             Layer::Union {
                transform,
-               bounds: _bounds,
+               bounds: _,
                combination,
-               children
-            } => {
-               let depth = parcel.depth;
-               let u_index = parcel.u_index;
-               let name = format!("d{depth}u{u_index}");
+               children,
+            } => disclose_union(transform, combination, children, parcel),
 
-               let up = &parcel.upper_union;
-
-               let trans_name = format!("d{depth}u{}t", parcel.u_index);
-               let trans = transform.comp_map(trans_name.clone(), parcel.upper_transform.clone());
-               let trans = add_tabs_to_string(trans.as_str(), 3);
-               let scale_cleanup = transform.scale_correction(name.clone());
-
-               let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
-
-
-               let mut childs = String::new();
-               for (i, child) in children.iter().enumerate() {
-                  childs.push_str(disclose_layer(child, &Parcel {
-                     upper_union: name.clone(),
-                     upper_union_comb: combination.clone(),
-                     upper_transform: trans_name.clone(),
-                     depth: depth + 1,
-                     u_index: i as i32,
-                  }).as_str());
-                  childs.push('\n');
-               };
-
-               let out = format!(r#"
-               // union
-               {{
-                  // init and transform
-                  Hit d{depth}u{u_index} = {up};
-                  {trans}
-
-
-                  // children
-                  {{
-                     {childs}
-                  }}
-
-                  // cleanup
-                  {scale_cleanup}
-                  {close}
-               }}
-               "#, );
-
-               add_tabs_to_string(out.as_str(), depth as usize)
-            }
-
-            Layer::Mod => todo!()
-         };
-
-         out
+            Layer::Mod => todo!(),
+         }
       }
 
       // disclose
@@ -351,9 +345,7 @@ impl Passer<'_> {
 
       map.push_str(disclose_layer(&self.contents, &upper).as_str());
 
-
       // cleanup
-
       map.push_str({
          format!(r#"
 
@@ -363,10 +355,11 @@ impl Passer<'_> {
       "#).as_str()
       });
 
-
       format!("{map}\n{cast}")
    }
 }
+
+
 
 
 // helper functions

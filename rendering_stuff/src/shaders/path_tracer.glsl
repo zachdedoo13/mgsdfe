@@ -1146,6 +1146,7 @@ void main() {
 
 
 
+
 Hit map(vec3 p_in) {
     // init
     Hit d0u0 = Hit(100000.0);
@@ -1165,7 +1166,6 @@ Hit map(vec3 p_in) {
         d1u0t *= rot3D(d1u0t, vec3((1), (0), (0)));
 
 
-
         // children
         {
 
@@ -1183,7 +1183,6 @@ Hit map(vec3 p_in) {
                 // cleanup
                 d2s0.d = scale_correction(d2s0.d, vec3((1), (1), (1)));
                 d1u0 = opUnion(d2s0, d1u0);
-
             }
 
 
@@ -1197,7 +1196,6 @@ Hit map(vec3 p_in) {
                 d2u1t /= vec3((1), (1), (1));
                 d2u1t = move(d2u1t, vec3((1), (1), (1)));
                 d2u1t *= rot3D(d2u1t, vec3((1), (0), (0)));
-
 
 
                 // children
@@ -1222,7 +1220,6 @@ Hit map(vec3 p_in) {
                 d2u2t *= rot3D(d2u2t, vec3((1), (0), (0)));
 
 
-
                 // children
                 {
 
@@ -1239,11 +1236,8 @@ Hit map(vec3 p_in) {
 
                         // cleanup
                         d3s0.d = scale_correction(d3s0.d, vec3((1), (1), (1)));
-                        d2u2 = opSmoothUnion(d3s0, d2u2, (2.8));
-
+                        d2u2 = opUnion(d3s0, d2u2);
                     }
-
-
 
                 }
 
@@ -1264,6 +1258,7 @@ Hit map(vec3 p_in) {
     return d0u0;
 }
 
+
 Hit cast_ray(Ray ray) {
     float t = 0.0;
     for (int i = 0; i < s.steps_per_ray; i++) {
@@ -1276,6 +1271,8 @@ Hit cast_ray(Ray ray) {
     }
     return Hit(t);
 }
+
+
 
 
 
