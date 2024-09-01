@@ -175,6 +175,11 @@ vec3 rotateRayDirection(vec3 direction, vec3 rotation) {
     return direction;
 }
 
+float scale_correction(float d, vec3 s) {
+    //                u1s1.d *= min(min(scale.x, scale.y), scale.z);
+    return d * min(min(s.x, s.y), s.z);
+}
+
 
 //////////////
 /// Unions ///
@@ -220,6 +225,7 @@ bool bool_hit(vec2 intersect) {
 /// Bit manipulation ///
 ////////////////////////
 
+// currently fucks shit up, idk why
 void setBoolAtIndex(inout uint data, int index, bool value) {
     if (value) {
         data |= (1u << index);  // Set the bit at 'index' to 1
@@ -960,13 +966,27 @@ Hit map_brute_force(vec3 p_in) {
     // Transform 1
     {
         Hit u1 = back;
-        vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
+
+        vec3 scale = vec3(2.0, 1.0, 1.0);
+
+        vec3 u1t = t;
+        u1t /= scale;
+        u1t = move(u1t, vec3(0.0, 0.0, 3.0));
         {
             {
+//                vec3 scale = vec3(1.0, 1.0, 10.0) * 2.0;
+//                float scale = 2.0 * 2.0;
+
                 vec3 u1s1t = u1t;
+//                u1s1t /= scale;
                 u1s1t = move(u1s1t, vec3(0.0));
 
                 Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+//                u1s1.d *= scale;
+//                u1s1.d *= min(min(scale.x, scale.y), scale.z);
+
+
+
                 u1 = opUnion(u1, u1s1);
             }
 
@@ -1068,7 +1088,7 @@ vec4 pathtrace(Ray ray) {
     switch (s.mode) {
         case 0:
             test = cast_ray_brute_force(ray);
-            back = vec4(vec2(test.d * 0.2), 0.0, 1.0);
+            back = vec4(vec2(test.d * 0.02), 0.0, 1.0);
             break;
 
         case 1:
@@ -1092,10 +1112,6 @@ vec4 pathtrace(Ray ray) {
 
     return back;
 }
-
-
-
-
 
 
 void main() {
@@ -1125,3 +1141,142 @@ void main() {
     imageStore(write_tex, gl_uv, trace);
 
 }
+
+
+
+
+
+Hit map(vec3 p_in) {
+    // init
+    Hit d0u0 = Hit(100000.0);
+    vec3 t = p_in;
+
+    // start
+
+
+    // union
+    {
+        // init and transform
+        Hit d1u0 = d0u0;
+
+        vec3 d1u0t = t;
+        d1u0t /= vec3((1), (1), (1));
+        d1u0t = move(d1u0t, vec3((1), (1), (1)));
+        d1u0t *= rot3D(d1u0t, vec3((1), (0), (0)));
+
+
+
+        // children
+        {
+
+            // shape
+            {
+
+                vec3 d2u0t = d1u0t;
+                d2u0t /= vec3((1), (1), (1));
+                d2u0t = move(d2u0t, vec3((1), (1), (1)));
+                d2u0t *= rot3D(d2u0t, vec3((1), (1), (1)));
+
+
+                Hit d2s0 = Hit(sdSphere(d2u0t, 1.0));
+
+                // cleanup
+                d2s0.d = scale_correction(d2s0.d, vec3((1), (1), (1)));
+                d1u0 = opUnion(d2s0, d1u0);
+
+            }
+
+
+
+            // union
+            {
+                // init and transform
+                Hit d2u1 = d1u0;
+
+                vec3 d2u1t = d1u0t;
+                d2u1t /= vec3((1), (1), (1));
+                d2u1t = move(d2u1t, vec3((1), (1), (1)));
+                d2u1t *= rot3D(d2u1t, vec3((1), (0), (0)));
+
+
+
+                // children
+                {
+
+                }
+
+                // cleanup
+                d2u1.d = scale_correction(d2u1.d, vec3((1), (1), (1)));
+                d1u0 = opUnion(d2u1, d1u0);
+            }
+
+
+            // union
+            {
+                // init and transform
+                Hit d2u2 = d1u0;
+
+                vec3 d2u2t = d1u0t;
+                d2u2t /= vec3((1), (1), (1));
+                d2u2t = move(d2u2t, vec3((1), (1), (1)));
+                d2u2t *= rot3D(d2u2t, vec3((1), (0), (0)));
+
+
+
+                // children
+                {
+
+                    // shape
+                    {
+
+                        vec3 d3u0t = d2u2t;
+                        d3u0t /= vec3((1), (1), (1));
+                        d3u0t = move(d3u0t, vec3((1), (1), (1)));
+                        d3u0t *= rot3D(d3u0t, vec3((1), (1), (1)));
+
+
+                        Hit d3s0 = Hit(sdSphere(d3u0t, 1.0));
+
+                        // cleanup
+                        d3s0.d = scale_correction(d3s0.d, vec3((1), (1), (1)));
+                        d2u2 = opSmoothUnion(d3s0, d2u2, (2.8));
+
+                    }
+
+
+
+                }
+
+                // cleanup
+                d2u2.d = scale_correction(d2u2.d, vec3((1), (1), (1)));
+                d1u0 = opUnion(d2u2, d1u0);
+            }
+
+
+        }
+
+        // cleanup
+        d1u0.d = scale_correction(d1u0.d, vec3((1), (1), (1)));
+        d0u0 = opUnion(d1u0, d0u0);
+    }
+
+
+    return d0u0;
+}
+
+Hit cast_ray(Ray ray) {
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map(p);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+    }
+    return Hit(t);
+}
+
+
+
+
