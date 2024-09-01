@@ -1,5 +1,4 @@
-use eframe::egui::TextBuffer;
-
+#![allow(dead_code)]
 // basic
 #[derive(Copy, Clone, Debug)]
 pub struct Oss {
@@ -191,8 +190,8 @@ impl Passer<'_> {
       let mut map = String::new();
       let mut cast = String::new();
 
-      let mut upper_depth = 0;
-      let mut upper_u_index = 0;
+      let upper_depth = 0;
+      let upper_u_index = 0;
 
       // init code
       map.push_str({
@@ -727,7 +726,7 @@ mod tests {
          let mut tot = Duration::ZERO;
 
          let am = 100;
-         for j in 0..am {
+         for _ in 0..am {
             let st = Instant::now();
             let mut passer = Passer {
                contents: &data,

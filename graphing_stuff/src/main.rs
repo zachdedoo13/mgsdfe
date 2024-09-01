@@ -2,8 +2,6 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))] // Forbid warnings in release builds
 #![warn(clippy::all, rust_2018_idioms)]
 
-use std::f32::consts::PI;
-use std::time::Instant;
 use graphing_stuff::app::NodeGraph;
 
 // When compiling natively:
