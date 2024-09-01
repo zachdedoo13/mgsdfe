@@ -1,23 +1,52 @@
 use eframe::egui::TextBuffer;
 
 // basic
+#[derive(Copy, Clone, Debug)]
 pub struct Oss {
    freq: f32,
    amp: f32,
    phase: f32,
 }
+#[derive(Copy, Clone, Debug)]
 enum FloatOrOss {
    Float(f32),
    Oss(Oss),
 }
+#[derive(Copy, Clone, Debug)]
 pub struct Float {
    val: FloatOrOss,
    id: u64,
 }
+impl Float {
+   fn is_zero(&self) -> bool {
+      match self.val {
+         FloatOrOss::Float(data) => !(data == 0.0),
+         FloatOrOss::Oss(_) => false,
+      }
+   }
+
+   fn comp(&self) -> String {
+      match self.val {
+         FloatOrOss::Float(data) => format!("({data})"),
+         FloatOrOss::Oss(_) => todo!(),
+      }
+   }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
    x: Float,
    y: Float,
    z: Float,
+}
+impl Vec3 {
+   fn is_zero(&self) -> bool {
+      self.x.is_zero() | self.y.is_zero() | self.z.is_zero()
+   }
+
+   fn comp(&self) -> String {
+      format!("vec3({}, {}, {})", self.x.comp(), self.y.comp(), self.z.comp())
+   }
 }
 
 
@@ -27,6 +56,30 @@ pub struct Transform {
    rotation: Vec3,
    scale: Float,
 }
+impl Transform {
+   /// doesn't disclose scale
+   fn comp<T: Into<String>>(&self, name: T, transform_reference: T) -> String {
+      let name: String = name.into();
+      let tfr: String = transform_reference.into();
+
+      let pos = match self.position.is_zero() {
+         true => format!("{name} = move({name}, {});", self.position.comp()),
+         false => format!("//position zero"),
+      };
+
+      let rot = match self.rotation.is_zero() {
+         true => format!("{name} *= rot3D({name}, {});", self.rotation.comp()),
+         false => format!("//rotation zero"),
+      };
+
+      format!(r#"
+      vec3 {name} = {tfr};
+      {pos}
+      {rot}
+      "#, )
+   }
+}
+
 pub struct Material {
    surface_color: Vec3,
 }
@@ -47,6 +100,32 @@ pub enum SdfType {
 }
 
 
+#[derive(Copy, Clone, Debug)]
+pub struct Combination {
+   comb: CombinationType,
+   strength: Float,
+}
+impl Combination {
+   fn comp<T: Into<String>>(&self, name: T, union_ref: T) -> String {
+      let name = name.into();
+      let union_ref = union_ref.into();
+      match self.comb {
+         CombinationType::Union => format!("{union_ref} = opUnion({name}, {union_ref});"),
+         CombinationType::SmoothUnion => todo!(),
+         CombinationType::Subtraction => todo!(),
+         CombinationType::SmoothSubtraction => todo!(),
+      }
+   }
+}
+#[derive(Copy, Clone, Debug)]
+pub enum CombinationType {
+   Union,
+   SmoothUnion,
+   Subtraction,
+   SmoothSubtraction,
+}
+
+
 pub enum Layer {
    Shape {
       transform: Transform,
@@ -57,6 +136,7 @@ pub enum Layer {
    Union {
       transform: Transform,
       bounds: Bounds,
+      combination: Combination,
       children: Vec<Layer>,
    },
    Mod,
@@ -97,8 +177,8 @@ impl Passer {
       let mut map = String::new();
       let mut cast = String::new();
 
-      let mut depth = 0;
-      let mut u_index = 0;
+      let mut upper_depth = 0;
+      let mut upper_u_index = 0;
 
       // init code
       map.push_str({
@@ -107,7 +187,7 @@ impl Passer {
       Hit map(vec3 p_in) {{
          // init
          Hit d0u0 = Hit(100000.0);
-         vec3 d0t0 = p_in;
+         vec3 t = p_in;
 
          // start
 
@@ -135,36 +215,95 @@ impl Passer {
 
 
       // disclose functions
-      fn disclose_layer(layer: &Layer, depth: i32, u_index: i32) -> String {
-         let mut out = String::new();
+      #[derive(Debug)]
+      struct Parcel {
+         upper_union: String,
+         upper_union_comb: Combination,
 
-         match layer {
+         upper_transform: String,
+
+         depth: i32,
+         u_index: i32,
+      }
+
+      fn disclose_layer(layer: &Layer, parcel: &Parcel) -> String {
+         let out: String = match layer {
             Layer::Shape {
                transform,
                material,
                bounds,
                sdf_type
             } => {
-
+               format!("{parcel:?}")
             }
 
             Layer::Union {
                transform,
-               bounds,
+               bounds: _bounds,
+               combination,
                children
             } => {
+               let depth = parcel.depth;
+               let u_index = parcel.u_index;
+               let name = format!("d{depth}u{u_index}");
 
+               let up = &parcel.upper_union;
+
+               let trans_name = format!("u{}t", parcel.u_index);
+               let trans = transform.comp(trans_name.clone(), parcel.upper_transform.clone());
+               let trans = add_tabs_to_string(trans.as_str(), 3);
+
+               let close = combination.comp(name.clone(), format!("{}", parcel.upper_union));
+
+               let mut childs = String::new();
+               for (i, child) in children.iter().enumerate() {
+                  childs.push_str(disclose_layer(child, &Parcel {
+                     upper_union: name.clone(),
+                     upper_union_comb: combination.clone(),
+                     upper_transform: trans_name.clone(),
+                     depth: depth + 1,
+                     u_index: i as i32,
+                  }).as_str());
+                  childs.push('\n');
+               };
+
+               format!(r#"
+
+               {{
+                  // init and transform
+                  Hit d{depth}u{u_index} = {up};
+                  {trans}
+
+
+                  // children
+                  {{
+                     {childs}
+                  }}
+
+                  // cleanup
+                  {close}
+               }}
+
+               "#, )
             }
 
             Layer::Mod => todo!()
-         }
+         };
+
 
          out
       }
 
       // disclose
-      depth += 1;
-      map.push_str(disclose_layer(&self.contents, depth, u_index).as_str());
+      let upper = Parcel {
+         upper_union: "d0u0".to_string(),
+         upper_union_comb: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(0.0), id: 0 } },
+         upper_transform: "t".to_string(),
+         depth: upper_depth + 1,
+         u_index: upper_u_index,
+      };
+
+      map.push_str(disclose_layer(&self.contents, &upper).as_str());
 
 
       // cleanup
@@ -183,15 +322,44 @@ impl Passer {
    }
 }
 
+
 // helper functions
-fn disclose_transform(transform: Transform, depth: i32, u_index: i32) -> String {
-   let mut out = String::new();
-
-
-   out
+fn add_tabs_to_string(input: &str, tab_count: usize) -> String {
+   let tabs = "\t".repeat(tab_count);
+   input
+       .lines()
+       .map(|line| format!("{}{}", tabs, line))
+       .collect::<Vec<String>>()
+       .join("\n")
 }
-
-
+fn remove_tabs_from_string(input: &str, tab_count: usize) -> String {
+   let tabs = "\t".repeat(tab_count);
+   input
+       .lines()
+       .map(|line| {
+          if line.starts_with(&tabs) {
+             &line[tab_count..]
+          } else {
+             line
+          }
+       })
+       .collect::<Vec<&str>>()
+       .join("\n")
+}
+fn remove_spaces_from_string(input: &str, space_count: usize) -> String {
+   let spaces = " ".repeat(space_count);
+   input
+       .lines()
+       .map(|line| {
+          if line.starts_with(&spaces) {
+             &line[space_count..]
+          } else {
+             line
+          }
+       })
+       .collect::<Vec<&str>>()
+       .join("\n")
+}
 
 #[cfg(test)]
 mod tests {
@@ -216,12 +384,13 @@ mod tests {
             },
             rotation: Vec3 {
                x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
+               y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
+               z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
             },
             scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
          },
          bounds: Bounds { automatic: false },
+         combination: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(0.0), id: get_cid() } },
          children: vec![
             Layer::Shape {
                transform: Transform {

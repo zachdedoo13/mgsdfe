@@ -1001,7 +1001,7 @@ Hit map_brute_force(vec3 p_in) {
 
                 float scale = 1.0 / 0.5;
                 Hit u2s2 = Hit(
-                sdMandelbulb(u2s2t * scale, MBS) / scale
+                    sdMandelbulb(u2s2t * scale, MBS) / scale
                 );
                 u2 = opUnion(u2, u2s2);
             }
