@@ -1,8 +1,10 @@
-use bytemuck::{Pod, Zeroable};
+use std::any::Any;
+use bytemuck::{cast_slice, Pod, Zeroable};
 use egui::TextureId;
 use egui_wgpu::Renderer;
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Device, Extent3d, Queue, ShaderStages, StorageTextureAccess, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension};
+use image::{DynamicImage, GenericImageView, Rgba32FImage};
 use serde::{Deserialize, Serialize};
+use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Queue, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages, StorageTextureAccess, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension};
 
 pub struct StorageTexturePackage {
    pub size: Extent3d,
@@ -169,7 +171,6 @@ pub struct DualOutput<'a> {
 }
 
 
-
 pub struct Flipper<T> {
    one: T,
    two: T,
@@ -177,14 +178,13 @@ pub struct Flipper<T> {
 }
 impl<T> Flipper<T> {
    pub fn new(one: T, two: T) -> Self {
-      Self {one, two, active: false}
+      Self { one, two, active: false }
    }
 
    pub fn item_one(&self) -> &T {
       if self.active {
          &self.one
-      }
-      else {
+      } else {
          &self.two
       }
    }
@@ -192,8 +192,7 @@ impl<T> Flipper<T> {
    pub fn item_two(&self) -> &T {
       if self.active {
          &self.two
-      }
-      else {
+      } else {
          &self.one
       }
    }
@@ -202,7 +201,6 @@ impl<T> Flipper<T> {
       self.active = !self.active;
    }
 }
-
 
 
 pub struct EguiTexturePackage {
@@ -232,10 +230,10 @@ impl EguiTexturePackage {
 
       let view = texture.create_view(&TextureViewDescriptor::default());
 
-      let texture_id =  renderer.register_native_texture(
+      let texture_id = renderer.register_native_texture(
          &device,
          &view,
-         wgpu::FilterMode::Linear
+         wgpu::FilterMode::Linear,
       );
 
       Self {
@@ -333,11 +331,130 @@ impl Default for PathTracerUniformSettings {
          step_scale_factor: 1.137,
          eps_scale: 1.136,
 
-
          cam_pos: [0.0, 0.0, 0.0],
          cam_dir: [1.0, 2.0, 3.0],
          //
          // buffer: [0.0; 2],
+      }
+   }
+}
+
+
+pub struct SampledTexturePackage {
+   texture: Texture,
+   texture_view: TextureView,
+   sampler: Sampler,
+   bind_group_layout: BindGroupLayout,
+   bind_group: BindGroup,
+}
+impl SampledTexturePackage {
+   pub fn new(device: &Device, queue: &Queue, image_bytes: &[u8]) -> Self {
+      let bin = image::load_from_memory(image_bytes).unwrap();
+      let image = Self::convert_to_rgba32f(bin);
+      let bytes_of_image_32f = image.to_vec();
+      let dimensions = {
+         let s = image.dimensions();
+         Extent3d { width: s.0, height: s.1, depth_or_array_layers: 1 }
+      };
+
+      let texture = device.create_texture(&TextureDescriptor {
+         label: Some("Image tex"),
+         size: dimensions,
+         mip_level_count: 1,
+         sample_count: 1,
+         dimension: TextureDimension::D2,
+         format: TextureFormat::Rgba32Float,
+         usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+         view_formats: &[],
+      });
+
+      {
+         queue.write_texture(
+            ImageCopyTexture {
+               texture: &texture,
+               mip_level: 0,
+               origin: Default::default(),
+               aspect: Default::default(),
+            },
+            &cast_slice(&bytes_of_image_32f),
+            ImageDataLayout {
+               offset: 0,
+               bytes_per_row: Some(16 * dimensions.width),
+               rows_per_image: Some(dimensions.height),
+            },
+            dimensions,
+         );
+      } // write to tex
+
+      let texture_view = texture.create_view(&TextureViewDescriptor::default());
+      let sampler = device.create_sampler(&SamplerDescriptor {
+         label: Some("sampler"),
+
+         ..Default::default()
+      });
+
+      // bindgroups
+      let bind_group_layout =
+          device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+             entries: &[
+                BindGroupLayoutEntry {
+                   binding: 0,
+                   visibility: ShaderStages::all(),
+                   ty: BindingType::Texture {
+                      multisampled: false,
+                      view_dimension: TextureViewDimension::D2,
+                      sample_type: TextureSampleType::Float { filterable: true },
+                   },
+                   count: None,
+                },
+                BindGroupLayoutEntry {
+                   binding: 1,
+                   visibility: ShaderStages::all(),
+                   ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                   count: None,
+                },
+             ],
+             label: Some("texture_bind_group_layout"),
+          });
+
+      let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+         layout: &bind_group_layout,
+         entries: &[
+            wgpu::BindGroupEntry {
+               binding: 0,
+               resource: wgpu::BindingResource::TextureView(&texture_view),
+            },
+            wgpu::BindGroupEntry {
+               binding: 1,
+               resource: wgpu::BindingResource::Sampler(&sampler),
+            },
+         ],
+         label: Some("diffuse_bind_group"),
+      });
+
+
+      Self {
+         texture,
+         texture_view,
+         sampler,
+         bind_group_layout,
+         bind_group,
+      }
+   }
+
+   fn convert_to_rgba32f(img: DynamicImage) -> Rgba32FImage {
+      match img {
+         DynamicImage::ImageLuma8(img) => DynamicImage::ImageLuma8(img).to_rgba32f(),
+         DynamicImage::ImageLumaA8(img) => DynamicImage::ImageLumaA8(img).to_rgba32f(),
+         DynamicImage::ImageRgb8(img) => DynamicImage::ImageRgb8(img).to_rgba32f(),
+         DynamicImage::ImageRgba8(img) => DynamicImage::ImageRgba8(img).to_rgba32f(),
+         DynamicImage::ImageLuma16(img) => DynamicImage::ImageLuma16(img).to_rgba32f(),
+         DynamicImage::ImageLumaA16(img) => DynamicImage::ImageLumaA16(img).to_rgba32f(),
+         DynamicImage::ImageRgb16(img) => DynamicImage::ImageRgb16(img).to_rgba32f(),
+         DynamicImage::ImageRgba16(img) => DynamicImage::ImageRgba16(img).to_rgba32f(),
+         DynamicImage::ImageRgb32F(img) => DynamicImage::ImageRgb32F(img).to_rgba32f(),
+         DynamicImage::ImageRgba32F(rgba32f_img) => rgba32f_img,
+         _ => img.to_rgba32f(),
       }
    }
 }

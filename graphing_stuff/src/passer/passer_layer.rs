@@ -53,7 +53,7 @@ impl Vec3 {
 pub struct Transform {
    position: Vec3,
    rotation: Vec3,
-   scale: Vec3,
+   scale: Float,
 }
 impl Transform {
    /// doesn't disclose scale
@@ -428,11 +428,7 @@ mod tests {
                y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
             },
-            scale: Vec3 {
-               x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-            },
+            scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
          },
          bounds: Bounds { automatic: false },
          combination: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(0.0), id: get_cid() } },
@@ -449,11 +445,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                material: Material {
                   surface_color: Vec3 {
@@ -484,11 +476,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                bounds: Bounds { automatic: false },
                combination: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(1.0), id: get_cid() } },
@@ -506,11 +494,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                bounds: Bounds { automatic: false },
                combination: Combination { comb: CombinationType::SmoothUnion, strength: Float { val: FloatOrOss::Float(2.8), id: get_cid() } },
@@ -527,11 +511,7 @@ mod tests {
                            y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                            z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                         },
-                        scale: Vec3 {
-                           x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                        },
+                        scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                      },
                      material: Material {
                         surface_color: Vec3 {
@@ -586,11 +566,7 @@ mod tests {
                y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
             },
-            scale: Vec3 {
-               x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-               z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-            },
+            scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
          },
          bounds: Bounds { automatic: false },
          combination: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(0.0), id: get_cid() } },
@@ -607,11 +583,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                material: Material {
                   surface_color: Vec3 {
@@ -642,11 +614,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                bounds: Bounds { automatic: false },
                combination: Combination { comb: CombinationType::Union, strength: Float { val: FloatOrOss::Float(1.0), id: get_cid() } },
@@ -664,11 +632,7 @@ mod tests {
                      y: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                      z: Float { val: FloatOrOss::Float(0.0), id: get_cid() },
                   },
-                  scale: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
+                  scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
                bounds: Bounds { automatic: false },
                combination: Combination { comb: CombinationType::SmoothUnion, strength: Float { val: FloatOrOss::Float(2.8), id: get_cid() } },
@@ -685,11 +649,7 @@ mod tests {
                            y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                            z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                         },
-                        scale: Vec3 {
-                           x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                        },
+                        scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                      },
                      material: Material {
                         surface_color: Vec3 {

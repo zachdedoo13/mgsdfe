@@ -32,7 +32,7 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
 } s;
 
 struct Ray { vec3 ro; vec3 rd; };
-struct Hit { float d; };
+struct Hit { float d;  };
 
 
 #define FP 200.0
@@ -175,9 +175,10 @@ vec3 rotateRayDirection(vec3 direction, vec3 rotation) {
     return direction;
 }
 
-float scale_correction(float d, vec3 s) {
+float scale_correction(float d, float s) {
     //                u1s1.d *= min(min(scale.x, scale.y), scale.z);
-    return d * min(min(s.x, s.y), s.z);
+//    return d * min(min(s.x, s.y), s.z);
+    return d * s;
 }
 
 
@@ -463,212 +464,7 @@ vec4 cast_smart_aabb(Ray ray) {
 
 
 // bitwise if it can hit it checks
-//#define BITCHECKS uint[1]
-//
-//struct BitChecks {
-//    BITCHECKS data_array;
-//    int count;
-//};
-//
-//void set_aabb(inout BitChecks checks, bool val) {
-//    if (val) {
-//        int array_index = (checks.count / 32);
-//        int index = checks.count - (32 * array_index);
-//
-//        setBoolAtIndex(checks.data_array[array_index], index, val);
-//    }
-//
-//    checks.count += 1;
-//}
-//
-//bool check_bit(BitChecks checks, int i) {
-//    int array_index = (i / 32);
-//    int index = i - (32 * array_index);
-//
-//    return getBoolAtIndex(checks.data_array[array_index], index);
-//}
-//
-//
-//BitChecks bitwise_aabb_simple_array_bounds_checker(Ray ray) {
-//    BitChecks checks;
-//
-//    // transform 1
-//    vec3 t1tr = vec3(0.0, 0.0, 3.0);
-//    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
-//        set_aabb(
-//            checks,
-//            bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))
-//        );
-//
-//        set_aabb(
-//            checks,
-//            bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))
-//        );
-//
-//    }
-//
-//    // transform 2
-////    vec3 t2tr = vec3(1.0, -1.0, 2.0);
-////    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
-////        checks[2] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5)))));  //s3
-////        checks[3] = (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s4
-////    }
-////
-////    // transform 3
-////    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
-////    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
-////        checks[4] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5)))));  //s5
-////        checks[5] = (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5)))));   //s6
-////    }
-//
-//    return checks;
-//}
-//
-//float bitwise_aabb_simple_array_debug(Ray ray) {
-//    int count = 0;
-//
-//    // Transform 1
-//    vec3 t1tr = vec3(0.0, 0.0, 3.0);
-//    if (bool_hit(intersectAABB(ray, from_pos_size(t1tr, vec3(1.5))))) {
-//        count += 1;
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s1
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t1tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s2
-//    }
-//
-//    // Transform 2
-//    vec3 t2tr = vec3(1.0, -1.0, 2.0);
-//    if (bool_hit(intersectAABB(ray, from_pos_size(t2tr, vec3(2.0))))) {
-//        //        count += 1;
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s3
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t2tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s4
-//    }
-//
-//    // Transform 3
-//    vec3 t3tr = vec3(-1.0, 0.0, 1.0);
-//    if (bool_hit(intersectAABB(ray, from_pos_size(t3tr, vec3(2.0))))) {
-//        //        count += 1;
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s5
-//        if (bool_hit(intersectAABB(ray, from_pos_size(t3tr + vec3(1.0, 1.0, 0.0), vec3(0.5))))) {
-//            count += 1;
-//        }  // s6
-//    }
-//
-//    return float(count) / 9.0;
-//}
-//
-//Hit bitwise_map_simple_array_bounds_checker(vec3 p_in, BitChecks checks) {
-//    Hit back = Hit(100000.0);
-//    vec3 t = p_in;
-//
-//    // Transform 1
-//    if (check_bit(checks, 0) || check_bit(checks, 1)) {
-//        Hit u1 = back;
-//        vec3 u1t = move(t, vec3(0.0, 0.0, 3.0));
-//        {
-//            if (check_bit(checks, 0)) {
-//                vec3 u1s1t = u1t;
-//                u1s1t = move(u1s1t, vec3(0.0));
-//
-//                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
-//                u1 = opUnion(u1, u1s1);
-//            }
-//
-//            if (check_bit(checks, 1)) {
-//                vec3 u1s2t = u1t;
-//                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
-//
-//                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
-//                u1 = opUnion(u1, u1s2);
-//            }
-//        }
-//
-//        back = opUnion(back, u1);
-//    }
-//
-//    // Transform 2
-////    if (checks[2] || checks[3]) {
-////        Hit u2 = back;
-////        vec3 u2t = move(t, vec3(1.0, -1.0, 2.0));
-////        {
-////            if (checks[2]) {
-////                vec3 u2s1t = u2t;
-////                u2s1t = move(u2s1t, vec3(0.0));
-////
-////                Hit u2s1 = Hit(sdCube(u2s1t, vec3(0.5)));
-////                u2 = opUnion(u2, u2s1);
-////            }
-////
-////            if (checks[3]) {
-////                vec3 u2s2t = u2t;
-////                u2s2t = move(u2s2t, vec3(1.0, 1.0, 0.0));
-////
-////                float scale = 1.0 / 0.5;
-////                Hit u2s2 = Hit(sdMandelbulb(u2s2t * scale, MBS) / scale);
-////                u2 = opUnion(u2, u2s2);
-////            }
-////        }
-////
-////        back = opUnion(back, u2);
-////    }
-////
-////    // Transform 3
-////    if (checks[4] || checks[5]) {
-////        Hit u3 = back;
-////        vec3 u3t = move(t, vec3(-1.0, 0.0, 1.0));
-////        {
-////            if (checks[4]) {
-////                vec3 u3s1t = u3t;
-////                u3s1t = move(u3s1t, vec3(0.0));
-////
-////                float scale = 1.0 / 0.5;
-////                Hit u3s1 = Hit(sdMandelbulb(u3s1t * scale, MBS) / scale);
-////                u3 = opUnion(u3, u3s1);
-////            }
-////
-////            if (checks[5]) {
-////                vec3 u3s2t = u3t;
-////                u3s2t = move(u3s2t, vec3(1.0, 1.0, 0.0));
-////
-////                float scale = 1.0 / 0.5;
-////                Hit u3s2 = Hit(sdMandelbulb(u3s2t * scale, MBS) / scale);
-////                u3 = opUnion(u3, u3s2);
-////            }
-////        }
-////
-////        back = opUnion(back, u3);
-////    }
-//
-//    return back;
-//}
-//
-//vec4 bitwise_cast_simple_array_bounds_checker(Ray ray) {
-//    BitChecks checks = bitwise_aabb_simple_array_bounds_checker(ray);
-//
-//    float t = 0.0;
-//    for (int i = 0; i < s.steps_per_ray; i++) {
-//        vec3 p = ray.ro + ray.rd * t;
-//        Hit hit = bitwise_map_simple_array_bounds_checker(p, checks);
-//        t += hit.d;
-//
-//        if (hit.d < MHD) break;
-//        if (t > FP) break;
-//    }
-//
-//    //    float debug_col = aabb_simple_array_debug(ray);
-//    float debug_col = 0.0;
-//
-//    return vec4(t * 0.2, vec2(debug_col), 1.0);
-//}
+#define BITCHECKS uint[1]
 
 
 
@@ -967,7 +763,7 @@ Hit map_brute_force(vec3 p_in) {
     {
         Hit u1 = back;
 
-        vec3 scale = vec3(2.0, 1.0, 1.0);
+        float scale = 1.0;
 
         vec3 u1t = t;
         u1t /= scale;
@@ -1077,6 +873,58 @@ Hit cast_ray_brute_force(Ray ray) {
     return Hit(t);
 }
 
+// tex
+Hit map_tex_test(vec3 p_in) {
+    Hit back = Hit(100000.0);
+    vec3 t = p_in;
+
+    // Transform 1
+    {
+        Hit u1 = back;
+
+        float scale = 1.0;
+
+        vec3 u1t = t;
+        u1t /= scale;
+        u1t = move(u1t, vec3(0.0, 0.0, 3.0));
+        {
+            {
+                vec3 u1s1t = u1t;
+                u1s1t = move(u1s1t, vec3(0.0));
+
+                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
+
+                u1 = opUnion(u1, u1s1);
+            }
+
+            {
+                vec3 u1s2t = u1t;
+                u1s2t = move(u1s2t, vec3(1.0, 1.0, 0.0));
+
+                Hit u1s2 = Hit(sdSphere(u1s2t, 0.5));
+                u1 = opUnion(u1, u1s2);
+            }
+        }
+
+        back = opUnion(back, u1);
+    }
+
+    return back;
+}
+
+Hit cast_tex_test(Ray ray) {
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map_tex_test(p);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+    }
+    return Hit(t);
+}
+
 
 ////////////////////
 /// Pathtraceing ///
@@ -1086,6 +934,10 @@ vec4 pathtrace(Ray ray) {
     Hit test;
 
     switch (s.mode) {
+        case -1:
+            test = cast_tex_test(ray);
+            back = vec4(vec2(test.d * 0.2), 1.0, 0.4);
+            break;
         case 0:
             test = cast_ray_brute_force(ray);
             back = vec4(vec2(test.d * 0.02), 0.0, 1.0);
@@ -1142,135 +994,6 @@ void main() {
 
 }
 
-
-
-
-
-
-Hit map(vec3 p_in) {
-    // init
-    Hit d0u0 = Hit(100000.0);
-    vec3 t = p_in;
-
-    // start
-
-
-    // union
-    {
-        // init and transform
-        Hit d1u0 = d0u0;
-
-        vec3 d1u0t = t;
-        d1u0t /= vec3((1), (1), (1));
-        d1u0t = move(d1u0t, vec3((1), (1), (1)));
-        d1u0t *= rot3D(d1u0t, vec3((1), (0), (0)));
-
-
-        // children
-        {
-
-            // shape
-            {
-
-                vec3 d2u0t = d1u0t;
-                d2u0t /= vec3((1), (1), (1));
-                d2u0t = move(d2u0t, vec3((1), (1), (1)));
-                d2u0t *= rot3D(d2u0t, vec3((1), (1), (1)));
-
-
-                Hit d2s0 = Hit(sdSphere(d2u0t, 1.0));
-
-                // cleanup
-                d2s0.d = scale_correction(d2s0.d, vec3((1), (1), (1)));
-                d1u0 = opUnion(d2s0, d1u0);
-            }
-
-
-
-            // union
-            {
-                // init and transform
-                Hit d2u1 = d1u0;
-
-                vec3 d2u1t = d1u0t;
-                d2u1t /= vec3((1), (1), (1));
-                d2u1t = move(d2u1t, vec3((1), (1), (1)));
-                d2u1t *= rot3D(d2u1t, vec3((1), (0), (0)));
-
-
-                // children
-                {
-
-                }
-
-                // cleanup
-                d2u1.d = scale_correction(d2u1.d, vec3((1), (1), (1)));
-                d1u0 = opUnion(d2u1, d1u0);
-            }
-
-
-            // union
-            {
-                // init and transform
-                Hit d2u2 = d1u0;
-
-                vec3 d2u2t = d1u0t;
-                d2u2t /= vec3((1), (1), (1));
-                d2u2t = move(d2u2t, vec3((1), (1), (1)));
-                d2u2t *= rot3D(d2u2t, vec3((1), (0), (0)));
-
-
-                // children
-                {
-
-                    // shape
-                    {
-
-                        vec3 d3u0t = d2u2t;
-                        d3u0t /= vec3((1), (1), (1));
-                        d3u0t = move(d3u0t, vec3((1), (1), (1)));
-                        d3u0t *= rot3D(d3u0t, vec3((1), (1), (1)));
-
-
-                        Hit d3s0 = Hit(sdSphere(d3u0t, 1.0));
-
-                        // cleanup
-                        d3s0.d = scale_correction(d3s0.d, vec3((1), (1), (1)));
-                        d2u2 = opUnion(d3s0, d2u2);
-                    }
-
-                }
-
-                // cleanup
-                d2u2.d = scale_correction(d2u2.d, vec3((1), (1), (1)));
-                d1u0 = opUnion(d2u2, d1u0);
-            }
-
-
-        }
-
-        // cleanup
-        d1u0.d = scale_correction(d1u0.d, vec3((1), (1), (1)));
-        d0u0 = opUnion(d1u0, d0u0);
-    }
-
-
-    return d0u0;
-}
-
-
-Hit cast_ray(Ray ray) {
-    float t = 0.0;
-    for (int i = 0; i < s.steps_per_ray; i++) {
-        vec3 p = ray.ro + ray.rd * t;
-        Hit hit = map(p);
-        t += hit.d;
-
-        if (hit.d < MHD) break;
-        if (t > FP) break;
-    }
-    return Hit(t);
-}
 
 
 

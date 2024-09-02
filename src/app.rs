@@ -44,8 +44,9 @@ impl MehApp {
       let render_state = cc.wgpu_render_state.as_ref().unwrap();
       let renderer = &mut render_state.renderer.write();
       let device = &render_state.device;
+      let queue = &render_state.queue;
 
-      let meh_renderer = MehRenderer::new(device, renderer, &get!(RENDER_SETTINGS));
+      let meh_renderer = MehRenderer::new(device, queue, renderer, &get!(RENDER_SETTINGS));
 
       // init
       let ctx = &cc.egui_ctx;
