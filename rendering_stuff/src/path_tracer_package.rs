@@ -23,6 +23,9 @@ impl PathTracePackage {
    pub fn new(device: &Device, queue: &Queue, render_settings: &RenderSettings) -> Self {
       let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::default().path_tracer_uniform_settings);
 
+      let london: &'static [u8] = include_bytes!("shaders/assets/london.jpg");
+      let test_tex = SampledTexturePackage::new(device, queue, london);
+
       let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let path_tracer_textures = DualStorageTexturePackage::new(one, two);
@@ -34,6 +37,7 @@ impl PathTracePackage {
             &refs.read.read_bind_group_layout,
             &refs.write.write_bind_group_layout,
             &path_tracer_uniform.layout,
+            &test_tex.bind_group_layout,
          ],
          push_constant_ranges: &[],
       });
@@ -49,8 +53,7 @@ impl PathTracePackage {
       });
 
 
-      let london: &'static [u8] = include_bytes!("shaders/assets/london.jpg");
-      let test_tex = SampledTexturePackage::new(device, queue, london);
+
 
       Self {
          path_tracer_pipeline_layout,
@@ -89,6 +92,8 @@ impl PathTracePackage {
          compute_pass.set_bind_group(1, &refs.write.write_bind_group, &[]);
          compute_pass.set_bind_group(2, &self.path_tracer_uniform.bind_group, &[]);
 
+         compute_pass.set_bind_group(3, &self.test_tex.bind_group, &[]);
+
          let size = refs.read.size;
          let wg = 16;
          compute_pass.dispatch_workgroups(
@@ -120,8 +125,8 @@ impl PathTracePackage {
 }
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   let source = include_str!("shaders/path_tracer.glsl").to_string();
-   // let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
+   // let source = include_str!("shaders/path_tracer.glsl").to_string();
+   let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,

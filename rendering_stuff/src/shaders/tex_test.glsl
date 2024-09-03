@@ -31,6 +31,9 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
     float rot_z;
 } s;
 
+layout(set = 3, binding = 0) uniform texture2D myTexture;
+layout(set = 3, binding = 1) uniform sampler mySampler;
+
 
 struct Mat { vec3 col; };
 #define MDEF Mat(vec3(0.0))
@@ -332,7 +335,6 @@ vec4 pathtrace(Ray ray) {
     return back;
 }
 
-
 void main() {
     ivec2 gl_uv = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dimentions = imageSize(read_tex);
@@ -357,6 +359,11 @@ void main() {
 
     vec4 trace = pathtrace(ray);
 
-    imageStore(write_tex, gl_uv, trace);
+    // Sample from the texture at mipmap level 2
+    float mipLevel = 1.0;
+    vec4 color = textureLod(sampler2D(myTexture, mySampler), uv * 0.5 + 0.5, mipLevel);
 
+
+    imageStore(write_tex, gl_uv, color + trace);
 }
+

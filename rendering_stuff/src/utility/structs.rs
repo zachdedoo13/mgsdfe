@@ -341,76 +341,31 @@ impl Default for PathTracerUniformSettings {
 
 
 pub struct SampledTexturePackage {
-   texture: Texture,
-   texture_view: TextureView,
-   sampler: Sampler,
-   bind_group_layout: BindGroupLayout,
-   bind_group: BindGroup,
+   pub me_tex: MeTex,
+   pub bind_group_layout: BindGroupLayout,
+   pub bind_group: BindGroup,
 }
 impl SampledTexturePackage {
    pub fn new(device: &Device, queue: &Queue, image_bytes: &[u8]) -> Self {
-      let bin = image::load_from_memory(image_bytes).unwrap();
-      let image = Self::convert_to_rgba32f(bin);
-      let bytes_of_image_32f = image.to_vec();
-      let dimensions = {
-         let s = image.dimensions();
-         Extent3d { width: s.0, height: s.1, depth_or_array_layers: 1 }
-      };
-
-      let texture = device.create_texture(&TextureDescriptor {
-         label: Some("Image tex"),
-         size: dimensions,
-         mip_level_count: 1,
-         sample_count: 1,
-         dimension: TextureDimension::D2,
-         format: TextureFormat::Rgba32Float,
-         usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-         view_formats: &[],
-      });
-
-      {
-         queue.write_texture(
-            ImageCopyTexture {
-               texture: &texture,
-               mip_level: 0,
-               origin: Default::default(),
-               aspect: Default::default(),
-            },
-            &cast_slice(&bytes_of_image_32f),
-            ImageDataLayout {
-               offset: 0,
-               bytes_per_row: Some(16 * dimensions.width),
-               rows_per_image: Some(dimensions.height),
-            },
-            dimensions,
-         );
-      } // write to tex
-
-      let texture_view = texture.create_view(&TextureViewDescriptor::default());
-      let sampler = device.create_sampler(&SamplerDescriptor {
-         label: Some("sampler"),
-
-         ..Default::default()
-      });
-
+      let me_tex = MeTex::from_bytes(device, queue, image_bytes, "tex");
       // bindgroups
       let bind_group_layout =
-          device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+          device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
              entries: &[
-                BindGroupLayoutEntry {
+                wgpu::BindGroupLayoutEntry {
                    binding: 0,
-                   visibility: ShaderStages::all(),
-                   ty: BindingType::Texture {
+                   visibility: wgpu::ShaderStages::FRAGMENT | ShaderStages::COMPUTE,
+                   ty: wgpu::BindingType::Texture {
                       multisampled: false,
-                      view_dimension: TextureViewDimension::D2,
-                      sample_type: TextureSampleType::Float { filterable: true },
+                      view_dimension: wgpu::TextureViewDimension::D2,
+                      sample_type: wgpu::TextureSampleType::Float { filterable: true },
                    },
                    count: None,
                 },
-                BindGroupLayoutEntry {
+                wgpu::BindGroupLayoutEntry {
                    binding: 1,
-                   visibility: ShaderStages::all(),
-                   ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                   visibility: wgpu::ShaderStages::FRAGMENT | ShaderStages::COMPUTE,
+                   ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                    count: None,
                 },
              ],
@@ -422,11 +377,11 @@ impl SampledTexturePackage {
          entries: &[
             wgpu::BindGroupEntry {
                binding: 0,
-               resource: wgpu::BindingResource::TextureView(&texture_view),
+               resource: wgpu::BindingResource::TextureView(&me_tex.view),
             },
             wgpu::BindGroupEntry {
                binding: 1,
-               resource: wgpu::BindingResource::Sampler(&sampler),
+               resource: wgpu::BindingResource::Sampler(&me_tex.sampler),
             },
          ],
          label: Some("diffuse_bind_group"),
@@ -434,27 +389,86 @@ impl SampledTexturePackage {
 
 
       Self {
-         texture,
-         texture_view,
-         sampler,
+         me_tex,
          bind_group_layout,
          bind_group,
       }
    }
+}
 
-   fn convert_to_rgba32f(img: DynamicImage) -> Rgba32FImage {
-      match img {
-         DynamicImage::ImageLuma8(img) => DynamicImage::ImageLuma8(img).to_rgba32f(),
-         DynamicImage::ImageLumaA8(img) => DynamicImage::ImageLumaA8(img).to_rgba32f(),
-         DynamicImage::ImageRgb8(img) => DynamicImage::ImageRgb8(img).to_rgba32f(),
-         DynamicImage::ImageRgba8(img) => DynamicImage::ImageRgba8(img).to_rgba32f(),
-         DynamicImage::ImageLuma16(img) => DynamicImage::ImageLuma16(img).to_rgba32f(),
-         DynamicImage::ImageLumaA16(img) => DynamicImage::ImageLumaA16(img).to_rgba32f(),
-         DynamicImage::ImageRgb16(img) => DynamicImage::ImageRgb16(img).to_rgba32f(),
-         DynamicImage::ImageRgba16(img) => DynamicImage::ImageRgba16(img).to_rgba32f(),
-         DynamicImage::ImageRgb32F(img) => DynamicImage::ImageRgb32F(img).to_rgba32f(),
-         DynamicImage::ImageRgba32F(rgba32f_img) => rgba32f_img,
-         _ => img.to_rgba32f(),
+pub struct MeTex {
+   pub texture: wgpu::Texture,
+   pub view: wgpu::TextureView,
+   pub sampler: wgpu::Sampler,
+}
+impl MeTex {
+   pub fn from_bytes(
+      device: &wgpu::Device,
+      queue: &wgpu::Queue,
+      bytes: &[u8],
+      label: &str,
+   ) -> Self {
+      let img = image::load_from_memory(bytes).unwrap();
+      Self::from_image(device, queue, &img, Some(label))
+   }
+
+   pub fn from_image(
+      device: &wgpu::Device,
+      queue: &wgpu::Queue,
+      img: &image::DynamicImage,
+      label: Option<&str>,
+   ) -> Self {
+      let rgba = img.to_rgba8();
+      let dimensions = img.dimensions();
+
+      let size = wgpu::Extent3d {
+         width: dimensions.0,
+         height: dimensions.1,
+         depth_or_array_layers: 1,
+      };
+      let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+      let texture = device.create_texture(&wgpu::TextureDescriptor {
+         label,
+         size,
+         mip_level_count: 1,
+         sample_count: 1,
+         dimension: wgpu::TextureDimension::D2,
+         format,
+         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+         view_formats: &[],
+      });
+
+      queue.write_texture(
+         wgpu::ImageCopyTexture {
+            aspect: wgpu::TextureAspect::All,
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+         },
+         &rgba,
+         wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4 * dimensions.0),
+            rows_per_image: Some(dimensions.1),
+         },
+         size,
+      );
+
+      let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+      let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+         address_mode_u: wgpu::AddressMode::Repeat,
+         address_mode_v: wgpu::AddressMode::Repeat,
+         address_mode_w: wgpu::AddressMode::Repeat,
+         mag_filter: wgpu::FilterMode::Linear,
+         min_filter: wgpu::FilterMode::Nearest,
+         mipmap_filter: wgpu::FilterMode::Nearest,
+         ..Default::default()
+      });
+
+      Self {
+         texture,
+         view,
+         sampler,
       }
    }
 }
