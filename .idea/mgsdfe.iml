@@ -5,10 +5,12 @@
       <sourceFolder url="file://$MODULE_DIR$/graphing_stuff/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rendering_stuff/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/shader_paser/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/graphing_stuff/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/pkg" />
       <excludeFolder url="file://$MODULE_DIR$/rendering_stuff/target" />
+      <excludeFolder url="file://$MODULE_DIR$/shader_paser/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

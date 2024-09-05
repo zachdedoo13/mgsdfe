@@ -40,7 +40,7 @@ struct Mat { vec3 col; };
 
 struct Ray { vec3 ro; vec3 rd; };
 struct Hit { float d; Mat mat; };
-
+struct DPO { float d; int i; };
 
 #define FP 200.0
 #define MHD 0.001
@@ -197,6 +197,7 @@ Hit opUnion(Hit v1, Hit v2) {
     return v1.d < v2.d ? v1 : v2;
 }
 
+
 ////////////
 /// AABB ///
 ////////////
@@ -282,11 +283,14 @@ Hit map_tex_test(vec3 p_in) {
         u1t /= scale;
         u1t = move(u1t, vec3(0.0, 0.0, 3.0));
         {
+            // cube
             {
                 vec3 u1s1t = u1t;
                 u1s1t = move(u1s1t, vec3(0.0));
 
-                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)), Mat(vec3(0.2, 1.0, 0.6)));
+                vec3 col;
+
+                Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)), Mat(col));
 
                 u1 = opUnion(u1, u1s1);
             }
@@ -304,6 +308,14 @@ Hit map_tex_test(vec3 p_in) {
     }
 
     return back;
+}
+
+vec3 normal_tex_test(vec3 pos) {
+    // Center sample
+    float c = map_tex_test(pos).d;
+    // Use offset samples to compute gradient / normal
+    vec2 eps_zero = vec2(0.001, 0.0);
+    return normalize(vec3( map_tex_test(pos + eps_zero.xyy).d, map_tex_test(pos + eps_zero.yxy).d, map_tex_test(pos + eps_zero.yyx).d ) - c);
 }
 
 Hit cast_tex_test(Ray ray) {
@@ -329,7 +341,17 @@ vec4 pathtrace(Ray ray) {
     Hit test;
 
     test = cast_tex_test(ray);
-    back = vec4(test.mat.col, 1.0);
+
+    vec3 col = test.mat.col;
+//    back.rgb = normal_tex_test(ray.ro + ray.rd * test.d);
+
+    float NoL = max(dot(normal_tex_test(ray.ro + ray.rd * test.d), vec3(0.0, 0.74, 0.21)), 0.0);
+    vec3 LDirectional = vec3(0.9, 0.9, 0.8) * NoL;
+    vec3 LAmbient = vec3(0.03, 0.04, 0.1);
+    vec3 lighting = (LDirectional + LAmbient);
+
+
+    back.rgb = lighting * col + lighting * 0.4;
 
 
     return back;
@@ -348,8 +370,8 @@ void main() {
 
     // setup
     Ray ray = Ray(
-    vec3(s.pos_x, s.pos_y, s.pos_z),
-    normalize(vec3(uv, 1.0))
+        vec3(s.pos_x, s.pos_y, s.pos_z),
+        normalize(vec3(uv, 1.0))
     );
 
     // Usage
@@ -360,10 +382,10 @@ void main() {
     vec4 trace = pathtrace(ray);
 
     // Sample from the texture at mipmap level 2
-    float mipLevel = 1.0;
-    vec4 color = textureLod(sampler2D(myTexture, mySampler), uv * 0.5 + 0.5, mipLevel);
+//    float mipLevel = 1.0;
+//    vec4 color = textureLod(sampler2D(myTexture, mySampler), uv * 0.5 + 0.5, mipLevel);
 
 
-    imageStore(write_tex, gl_uv, color + trace);
+    imageStore(write_tex, gl_uv, trace);
 }
 

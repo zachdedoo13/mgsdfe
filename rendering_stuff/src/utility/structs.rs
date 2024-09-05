@@ -1,10 +1,9 @@
-use std::any::Any;
-use bytemuck::{cast_slice, Pod, Zeroable};
+use bytemuck::{Pod, Zeroable};
 use egui::TextureId;
 use egui_wgpu::Renderer;
-use image::{DynamicImage, GenericImageView, Rgba32FImage};
+use image::GenericImageView;
 use serde::{Deserialize, Serialize};
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Device, Extent3d, ImageCopyTexture, ImageDataLayout, Queue, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages, StorageTextureAccess, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension};
+use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Device, Extent3d, Queue, ShaderStages, StorageTextureAccess, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension};
 
 pub struct StorageTexturePackage {
    pub size: Extent3d,

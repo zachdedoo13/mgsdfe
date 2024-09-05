@@ -137,13 +137,13 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
       },
    };
 
-   // std::panic::set_hook(Box::new(|panic_info| {
-   //    if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
-   //       eprintln!("Panic occurred");
-   //    } else {
-   //       eprintln!("Panic occurred");
-   //    }
-   // }));
+   std::panic::set_hook(Box::new(|panic_info| {
+      if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
+         eprintln!("Panic occurred");
+      } else {
+         eprintln!("Panic occurred");
+      }
+   }));
 
    let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
       device.create_shader_module(shader_mod)

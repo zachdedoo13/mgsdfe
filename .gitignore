@@ -2,3 +2,4 @@
 /graphing_stuff/target
 /pkg/.gitignore
 /rendering_stuff/target
+/shader_paser/target/
