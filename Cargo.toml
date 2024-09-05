@@ -24,6 +24,7 @@ instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
 serde = { version = "1.0.208", features = ["derive"] }
 
 rendering_stuff = { path = "rendering_stuff" }
+graphing_stuff = { path = "graphing_stuff" }
 
 #egui extentions
 egui_plot = "0.28.1"

@@ -3,12 +3,13 @@
 mod datastructures;
 mod transform_mat;
 
+use strum::EnumIter;
 use transform_mat::*;
 use datastructures::*;
 
 // less basic
 
-
+#[derive(Debug)]
 pub struct SDF {
    sdf_type: SdfType,
    settings: Vec3,
@@ -26,11 +27,21 @@ impl SDF {
       }
    }
 }
+#[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
 pub enum SdfType {
    Sphere,
    Cube,
 
-   Custom { data: String },
+   Custom { data: i32 },
+}
+impl SdfType {
+   pub fn as_str(&self) -> &str {
+      match self {
+         SdfType::Sphere => "Sphere",
+         SdfType::Cube => "Cube",
+         SdfType::Custom { .. } => "Custom"
+      }
+   }
 }
 
 
@@ -51,14 +62,24 @@ impl Combination {
       }
    }
 }
-#[derive(Copy, Clone, Debug)]
+
+#[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
 pub enum CombinationType {
    Union,
    SmoothUnion,
    Subtraction,
    SmoothSubtraction,
 }
-
+impl CombinationType {
+   pub fn as_str(&self) -> &str {
+      match self {
+         CombinationType::Union => "Union",
+         CombinationType::SmoothUnion => "Smooth Union",
+         CombinationType::Subtraction => "Subtraction",
+         CombinationType::SmoothSubtraction => "Smooth Subtraction",
+      }
+   }
+}
 
 pub enum Layer {
    Shape {

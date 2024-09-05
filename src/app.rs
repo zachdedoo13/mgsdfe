@@ -4,9 +4,11 @@ use eframe::{App, CreationContext, Frame};
 use egui::{CentralPanel, ComboBox, Context, DragValue, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
 use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
+use log::error;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
+use graphing_stuff::graph::NodeGraph;
 use rendering_stuff::render_state::MehRenderer;
 use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
 use crate::{get, init_static, load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
@@ -21,6 +23,7 @@ init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::default()});
 
 pub struct MehApp {
    meh_renderer: MehRenderer,
+   node_graph: NodeGraph,
 }
 
 impl App for MehApp {
@@ -41,12 +44,15 @@ impl App for MehApp {
 
 impl MehApp {
    pub fn new(cc: &CreationContext<'_>) -> Self {
-      let render_state = cc.wgpu_render_state.as_ref().unwrap();
+      let render_state = cc.wgpu_render_state.as_ref().expect("wgpu_render_state is None");
       let renderer = &mut render_state.renderer.write();
       let device = &render_state.device;
       let queue = &render_state.queue;
 
       let meh_renderer = MehRenderer::new(device, queue, renderer, &get!(RENDER_SETTINGS));
+
+      // graph
+      let node_graph = NodeGraph::new(cc);
 
       // init
       let ctx = &cc.egui_ctx;
@@ -78,6 +84,7 @@ impl MehApp {
 
       Self {
          meh_renderer,
+         node_graph,
       }
    }
 
@@ -118,8 +125,8 @@ impl MehApp {
                  .show_inside(ui, |ui| {
                     // sdf editor
 
-                    ui.group(|ui| { ui.label("big\nbad\nsdf\neditor"); });
-
+                    // ui.group(|ui| { ui.label("big\nbad\nsdf\neditor"); });
+                     self.node_graph.update(ui);
 
                     ui.allocate_space(ui.available_size());
                  });

@@ -125,8 +125,8 @@ impl PathTracePackage {
 }
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   // let source = include_str!("shaders/path_tracer.glsl").to_string();
-   let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
+   let source = include_str!("shaders/path_tracer.glsl").to_string();
+   // let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
