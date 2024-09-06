@@ -93,27 +93,6 @@ impl<'a> Traverser<'a> {
                todo!()
             }
             NodeTypes::Shape => {
-               // let transform: Option<Transform> = {
-               //    let transform_input = &node.inputs.iter().find(|param| param.0 == "transform").unwrap().1;
-               //    let inter = match self.out_to_in_cash.iter().find(|param| param.1 == transform_input) /*todo shit ass slow un-cashed*/ {
-               //       None => {
-               //          let transform_data = graph.inputs.get(*transform_input).unwrap();
-               //
-               //          transform_data
-               //       }
-               //       Some(connected_output) => {
-               //          let connected_node_id = self.outputs_cash.get(connected_output.0).unwrap();
-               //          let connected_node = graph.nodes.get(*connected_node_id).unwrap();
-               //
-               //          let connected_transform_input = &connected_node.inputs.iter().find(|param| param.0 == "transform").unwrap().1;
-               //          let transform_data = graph.inputs.get(*connected_transform_input).unwrap();
-               //
-               //          transform_data
-               //       }
-               //    };
-               //
-               //    None
-               // };
                let transform = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "transform").unwrap();
                println!("{transform:?}");
 
@@ -142,35 +121,33 @@ fn evaluate_connection<T: Into<String>>(
    node: &Node<MyNodeData>,
    graph: &MyGraph,
    out_to_in_cash: &HashMap<OutputId, InputId>,
-   outputs_cash: &HashMap<(OutputId), NodeId>,
+   outputs_cash: &HashMap<OutputId, NodeId>,
    name: T
 ) -> Option<ValueTypes> {
    let name = name.into();
 
-   let value: Option<ValueTypes> = {
-      let transform_input = &node.inputs.iter().find(|param| param.0 == name)?.1;
-      let inter =
-          match out_to_in_cash.iter().find(|param| param.1 == transform_input) /*todo shit ass slow un-cashed*/ {
-         None => {
-            let transform_data = graph.inputs.get(*transform_input)?;
+   // Find the input in the current node
+   let transform_input = node.inputs.iter().find(|param| param.0 == name)?.1;
 
-            Some(transform_data.value.clone())
-         }
-         Some(connected_output) => {
-            let connected_node_id = outputs_cash.get(connected_output.0)?;
-            let connected_node = graph.nodes.get(*connected_node_id)?;
+   // Check if this input is connected to an output
+   match out_to_in_cash.iter().find(|param| *param.1 == transform_input) {
+      None => {
+         // If not connected, get the value directly
+         let transform_data = graph.inputs.get(transform_input)?;
+         Some(transform_data.value.clone())
+      }
+      Some(connected_output) => {
+         // If connected, follow the connection
+         let connected_node_id = outputs_cash.get(connected_output.0)?;
+         let connected_node = graph.nodes.get(*connected_node_id)?;
 
-            let connected_transform_input = &connected_node.inputs.iter().find(|param| param.0 == name)?.1;
-            let transform_data = graph.inputs.get(*connected_transform_input)?;
+         // Find the corresponding input in the connected node
+         let connected_transform_input = connected_node.inputs.iter().find(|param| param.0 == name)?.1;
+         let transform_data = graph.inputs.get(connected_transform_input)?;
 
-            Some(transform_data.value.clone())
-         }
-      };
-
-      inter
-   };
-
-   value
+         Some(transform_data.value.clone())
+      }
+   }
 }
 fn find_tree_children_of_node(
    node_id: NodeId, inputs_cash: &HashMap<(InputId),
