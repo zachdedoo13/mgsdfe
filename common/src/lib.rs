@@ -49,7 +49,7 @@ impl Default for ShaderCode {
 
 
 
-// time package
+// time package singleton
 init_static!(TIME: TimePackage => { TimePackage::new() });
 
 const PAST_FPS_LIMIT: usize = 100;

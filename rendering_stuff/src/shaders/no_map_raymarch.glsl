@@ -225,7 +225,6 @@ bool bool_hit(vec2 intersect) {
 #include map
 
 
-
 ////////////////////
 /// Pathtraceing ///
 ////////////////////
