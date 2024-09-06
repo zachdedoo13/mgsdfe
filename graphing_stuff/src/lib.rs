@@ -5,6 +5,7 @@
 
 // pub mod app;
 pub mod nodes_and_types;
+pub mod graph_traverser;
 pub mod graph;
 
 

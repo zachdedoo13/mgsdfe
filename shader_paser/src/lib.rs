@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-mod datastructures;
-mod transform_mat;
+pub mod datastructures;
+pub mod transform_mat;
 
 use strum::EnumIter;
 use transform_mat::*;
@@ -11,8 +11,8 @@ use datastructures::*;
 
 #[derive(Debug)]
 pub struct SDF {
-   sdf_type: SdfType,
-   settings: Vec3,
+   pub sdf_type: SdfType,
+   pub settings: Vec3,
 }
 impl SDF {
    fn comp_map<T: Into<String>>(&self, transform: T) -> String {
@@ -27,6 +27,15 @@ impl SDF {
       }
    }
 }
+impl Default for SDF {
+   fn default() -> Self {
+      Self {
+         sdf_type: SdfType::Sphere,
+         settings: Default::default(),
+      }
+   }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
 pub enum SdfType {
    Sphere,
@@ -47,8 +56,8 @@ impl SdfType {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Combination {
-   comb: CombinationType,
-   strength: Float,
+   pub comb: CombinationType,
+   pub strength: Float,
 }
 impl Combination {
    fn comp_map<T: Into<String>>(&self, name: T, union_ref: T) -> String {
@@ -81,6 +90,7 @@ impl CombinationType {
    }
 }
 
+#[derive(Debug)]
 pub enum Layer {
    Shape {
       transform: Transform,
@@ -105,12 +115,12 @@ pub enum PassType {
    SmartAABB,
 }
 pub struct PassOptions {
-   pass_type: PassType,
+   pub pass_type: PassType,
 }
 
 pub struct Passer<'a> {
-   contents: &'a Layer,
-   pass_options: PassOptions,
+   pub contents: &'a Layer,
+   pub pass_options: PassOptions,
 }
 impl Passer<'_> {
    pub fn pass(&mut self) -> String {

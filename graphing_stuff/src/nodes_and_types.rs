@@ -10,12 +10,15 @@ use shader_paser::{CombinationType, SdfType};
 use crate::graph::{MyGraphState, MyNodeData, MyResponse};
 
 /// self-explanatory
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, EnumIter)]
 pub enum NodeTypes {
+   /// main types
    Main,
    Union,
-
    Shape,
+
+   /// abstractions
+   Transform,
 }
 
 /// A trait for the node kinds, which tells the library how to build new nodes
@@ -32,6 +35,7 @@ impl NodeTemplateTrait for NodeTypes {
          NodeTypes::Main => "Main",
          NodeTypes::Union => "New Union",
          NodeTypes::Shape => "New Shape",
+         NodeTypes::Transform => "New transform",
          _ => "New x"
       })
    }
@@ -73,7 +77,7 @@ impl NodeTemplateTrait for NodeTypes {
             // main input
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "tree_connection".to_string(),
                ConnectionTypes::Tree,
                ValueTypes::Tree,
                InputParamKind::ConnectionOnly,
@@ -83,7 +87,7 @@ impl NodeTemplateTrait for NodeTypes {
             // data
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "union_type".to_string(),
                ConnectionTypes::None,
                ValueTypes::UnionType { val: CombinationType::Union },
                InputParamKind::ConstantOnly,
@@ -92,14 +96,14 @@ impl NodeTemplateTrait for NodeTypes {
 
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "transform".to_string(),
                ConnectionTypes::Transform,
                ValueTypes::Transform {
                   position: [0.0, 0.0, 0.0],
                   rotation: [0.0, 0.0, 0.0],
                   scale: 0.0,
                },
-               InputParamKind::ConnectionOnly,
+               InputParamKind::ConnectionOrConstant,
                true,
             );
 
@@ -111,10 +115,11 @@ impl NodeTemplateTrait for NodeTypes {
                ConnectionTypes::Tree,
             );
          }
+
          NodeTypes::Shape => {
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "tree_connection".to_string(),
                ConnectionTypes::Tree,
                ValueTypes::Tree,
                InputParamKind::ConnectionOnly,
@@ -123,7 +128,7 @@ impl NodeTemplateTrait for NodeTypes {
 
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "sdf".to_string(),
                ConnectionTypes::None,
                ValueTypes::SdfData {
                   val: SdfType::Sphere,
@@ -135,15 +140,36 @@ impl NodeTemplateTrait for NodeTypes {
 
             graph.add_input_param(
                node_id,
-               "".to_string(),
+               "transform".to_string(),
                ConnectionTypes::Transform,
                ValueTypes::Transform {
                   position: [0.0, 0.0, 0.0],
                   rotation: [0.0, 0.0, 0.0],
                   scale: 0.0,
                },
-               InputParamKind::ConnectionOnly,
+               InputParamKind::ConnectionOrConstant,
                true,
+            );
+         }
+
+         NodeTypes::Transform => {
+            graph.add_input_param(
+               node_id,
+               "transform".to_string(),
+               ConnectionTypes::Transform,
+               ValueTypes::Transform {
+                  position: [0.0, 0.0, 0.0],
+                  rotation: [0.0, 0.0, 0.0],
+                  scale: 0.0,
+               },
+               InputParamKind::ConstantOnly,
+               true,
+            );
+
+            graph.add_output_param(
+               node_id,
+               "Out".to_string(),
+               ConnectionTypes::Transform,
             );
          }
       }
@@ -151,7 +177,7 @@ impl NodeTemplateTrait for NodeTypes {
 }
 
 /// ways in which a node can connect
-#[derive(Eq, PartialOrd, PartialEq)]
+#[derive(Eq, PartialOrd, PartialEq, Debug)]
 pub enum ConnectionTypes {
    /// used for all compiled stuff
    Tree,
@@ -167,10 +193,7 @@ impl DataTypeTrait<MyGraphState> for ConnectionTypes {
    fn data_type_color(&self, _user_state: &mut MyGraphState) -> Color32 {
       match self {
          ConnectionTypes::Float => Color32::RED,
-         ConnectionTypes::Tree => Color32::GOLD,
-         ConnectionTypes::Vec3 => Color32::GOLD,
-         ConnectionTypes::None => Color32::TRANSPARENT,
-         ConnectionTypes::Transform => Color32::GRAY,
+         _ => Color32::GOLD,
       }
    }
 
@@ -188,7 +211,7 @@ impl DataTypeTrait<MyGraphState> for ConnectionTypes {
 
 
 /// data held by connections
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ValueTypes {
    Tree,
    Float { val: f32 },
@@ -247,27 +270,29 @@ impl WidgetValueTrait for ValueTypes {
 
          ValueTypes::Transform { position, rotation, scale } => {
             ui.group(|ui| {
-               ui.label("scale");
-               ui.horizontal(|ui| {
-                  ui.add(DragValue::new(scale).speed(0.01));
+               ui.group(|ui| {
+                  ui.label("scale");
+                  ui.horizontal(|ui| {
+                     ui.add(DragValue::new(scale).speed(0.01));
+                  });
                });
-            });
 
-            ui.group(|ui| {
-               ui.label("position");
-               ui.horizontal(|ui| {
-                  ui.add(DragValue::new(&mut position[0]).speed(0.01));
-                  ui.add(DragValue::new(&mut position[1]).speed(0.01));
-                  ui.add(DragValue::new(&mut position[2]).speed(0.01));
+               ui.group(|ui| {
+                  ui.label("position");
+                  ui.horizontal(|ui| {
+                     ui.add(DragValue::new(&mut position[0]).speed(0.01));
+                     ui.add(DragValue::new(&mut position[1]).speed(0.01));
+                     ui.add(DragValue::new(&mut position[2]).speed(0.01));
+                  });
                });
-            });
 
-            ui.group(|ui| {
-               ui.label("rotation");
-               ui.horizontal(|ui| {
-                  ui.add(DragValue::new(&mut rotation[0]).speed(0.01));
-                  ui.add(DragValue::new(&mut rotation[1]).speed(0.01));
-                  ui.add(DragValue::new(&mut rotation[2]).speed(0.01));
+               ui.group(|ui| {
+                  ui.label("rotation");
+                  ui.horizontal(|ui| {
+                     ui.add(DragValue::new(&mut rotation[0]).speed(0.01));
+                     ui.add(DragValue::new(&mut rotation[1]).speed(0.01));
+                     ui.add(DragValue::new(&mut rotation[2]).speed(0.01));
+                  });
                });
             });
          }

@@ -1,6 +1,7 @@
 use crate::datastructures::{Float, Vec3};
 
 
+#[derive(Debug)]
 pub struct Transform {
    pub position: Vec3,
    pub rotation: Vec3,
@@ -37,10 +38,36 @@ impl Transform {
       format!("{sdf}.d = scale_correction({sdf}.d, {});", self.scale.comp())
    }
 }
+impl Default for Transform {
+   fn default() -> Self {
+      Self {
+         position: Default::default(),
+         rotation: Default::default(),
+         scale: Default::default(),
+      }
+   }
+}
 
+#[derive(Debug)]
 pub struct Material {
    pub surface_color: Vec3,
 }
+impl Default for Material {
+   fn default() -> Self {
+      Self {
+         surface_color: Default::default(),
+      }
+   }
+}
+
+#[derive(Debug)]
 pub struct Bounds {
    pub automatic: bool,
+}
+impl Default for Bounds {
+   fn default() -> Self {
+      Self {
+         automatic: true,
+      }
+   }
 }

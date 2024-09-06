@@ -1,16 +1,18 @@
-use std::sync::{Mutex};
+use std::sync::Mutex;
 use std::time::Duration;
+
 use eframe::{App, CreationContext, Frame};
 use egui::{CentralPanel, ComboBox, Context, DragValue, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
 use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
-use log::error;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
+
 use graphing_stuff::graph::NodeGraph;
 use rendering_stuff::render_state::MehRenderer;
 use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
+
 use crate::{get, init_static, load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
 use crate::packages::time_package::TimePackage;
 use crate::utility::functions::oss;
@@ -126,7 +128,7 @@ impl MehApp {
                     // sdf editor
 
                     // ui.group(|ui| { ui.label("big\nbad\nsdf\neditor"); });
-                     self.node_graph.update(ui);
+                    self.node_graph.update(ui);
 
                     ui.allocate_space(ui.available_size());
                  });
@@ -320,7 +322,6 @@ fn stats(ctx: &Context, ui: &mut Ui) {
       save_temp!(ctx, "freq", freq);
       save_temp!(ctx, "amp", amp);
       save_temp!(ctx, "phase", phase);
-
    } // test
 }
 

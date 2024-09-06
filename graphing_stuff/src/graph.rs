@@ -3,7 +3,9 @@ use std::borrow::Cow;
 use eframe::egui;
 use eframe::egui::{Color32, ComboBox, DragValue, Ui};
 use egui_node_graph2::{DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId, NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait};
+use strum::IntoEnumIterator;
 use shader_paser::CombinationType;
+use crate::graph_traverser::Traverser;
 use crate::nodes_and_types::*;
 
 /// data held in each node
@@ -83,19 +85,20 @@ impl NodeTemplateIter for AllMyNodeTemplates {
       // This function must return a list of node kinds, which the node finder
       // will use to display it to the user. Crates like strum can reduce the
       // boilerplate in enumerating all variants of an enum.
-      vec![
-         NodeTypes::Main,
-         NodeTypes::Union,
-         NodeTypes::Shape,
-      ]
+      // vec![
+      //    NodeTypes::Main,
+      //    NodeTypes::Union,
+      //    NodeTypes::Shape,
+      // ]
+      NodeTypes::iter().collect()
    }
 }
 
 
 
 // Graph code
-type MyGraph = Graph<MyNodeData, ConnectionTypes, ValueTypes>;
-type MyEditorState = GraphEditorState<MyNodeData, ConnectionTypes, ValueTypes, NodeTypes, MyGraphState>;
+pub type MyGraph = Graph<MyNodeData, ConnectionTypes, ValueTypes>;
+pub type MyEditorState = GraphEditorState<MyNodeData, ConnectionTypes, ValueTypes, NodeTypes, MyGraphState>;
 
 #[derive(Default)]
 pub struct NodeGraph {
@@ -116,11 +119,7 @@ impl NodeGraph {
    }
 
    pub fn update(&mut self, ui: &mut Ui) {
-      // egui::TopBottomPanel::top("top").show_inside(ui, |ui| {
-      //    egui::menu::bar(ui, |ui| {
-      //       egui::widgets::global_dark_light_mode_switch(ui);
-      //    });
-      // });
+
       let graph_response = egui::CentralPanel::default()
           .show_inside(ui, |ui| {
              self.state.draw_graph_editor(
@@ -143,15 +142,15 @@ impl NodeGraph {
          }
       }
 
-      // let mut traverser = Traverser::new();
+      let mut traverser = Traverser::new();
 
-      // if let Some(node) = self.graph_state.active_node {
-      //    if self.state.graph.nodes.contains_key(node) {
-      //       traverser.start_from(node, &mut self.state);
-      //    } else {
-      //       self.graph_state.active_node = None;
-      //    }
-      // }
+      if let Some(node) = self.graph_state.active_node {
+         if self.state.graph.nodes.contains_key(node) {
+            traverser.start_from(node, &mut self.state);
+         } else {
+            self.graph_state.active_node = None;
+         }
+      }
    }
 }
 

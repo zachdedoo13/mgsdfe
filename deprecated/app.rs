@@ -409,7 +409,8 @@ impl<'a> Traverser<'a> {
 
 fn find_tree_children_of_node(
       node_id: NodeId, inputs_cash: &HashMap<(InputId),
-      NodeId>, graph_state: &MyEditorState) -> Option<Vec<(NodeId, NodeTypes)>>
+      NodeId>, graph_state: &MyEditorState)
+   -> Option<Vec<(NodeId, NodeTypes)>>
 {
    let graph = &graph_state.graph;
    let node = &graph[node_id];

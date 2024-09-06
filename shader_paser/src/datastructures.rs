@@ -31,6 +31,15 @@ impl Float {
       }
    }
 }
+impl Default for Float {
+   fn default() -> Self {
+      Self {
+         val: FloatOrOss::Float(0.0),
+         id: 0,
+      }
+   }
+}
+
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
@@ -45,5 +54,14 @@ impl Vec3 {
 
    pub fn comp(&self) -> String {
       format!("vec3({}, {}, {})", self.x.comp(), self.y.comp(), self.z.comp())
+   }
+}
+impl Default for Vec3 {
+   fn default() -> Self {
+      Self {
+         x: Default::default(),
+         y: Default::default(),
+         z: Default::default(),
+      }
    }
 }
