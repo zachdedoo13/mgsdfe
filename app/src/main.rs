@@ -1,18 +1,22 @@
 // #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 
+use std::sync::Arc;
+
 #[cfg(not(target_arch = "wasm32"))]
 use eframe::egui_wgpu::WgpuConfiguration;
-
-use std::sync::Arc;
+// web
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
 use wgpu::{Adapter, DeviceDescriptor, Features};
-
 #[cfg(not(target_arch = "wasm32"))]
 use wgpu::PresentMode::Immediate;
 
-
 #[cfg(not(target_arch = "wasm32"))]
 use app::app::MehApp;
+
+#[cfg(target_arch = "wasm32")]
+use crate::MehApp;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -50,15 +54,6 @@ fn main() -> eframe::Result {
         Box::new(|cc| Ok(Box::new(MehApp::new(cc)))),
     )
 }
-
-
-
-// web
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-use crate::MehApp;
 
 
 /// Your handle to the web app from JavaScript.

@@ -34,7 +34,7 @@ impl Float {
 impl Default for Float {
    fn default() -> Self {
       Self {
-         val: FloatOrOss::Float(0.0),
+         val: FloatOrOss::Float(1.0),
          id: 0,
       }
    }

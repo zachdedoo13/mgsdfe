@@ -775,7 +775,9 @@ Hit map_brute_force(vec3 p_in) {
 
                 vec3 u1s1t = u1t;
 //                u1s1t /= scale;
+                u1s1t = rot3D(u1s1t, vec3(0.0));
                 u1s1t = move(u1s1t, vec3(0.0));
+
 
                 Hit u1s1 = Hit(sdCube(u1s1t, vec3(0.5)));
 //                u1s1.d *= scale;

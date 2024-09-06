@@ -177,7 +177,6 @@ dependencies = [
  "egui_plot",
  "env_logger",
  "graphing_stuff",
- "instant",
  "log",
  "once_cell",
  "rendering_stuff",
@@ -565,6 +564,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "instant",
  "once_cell",
 ]
 
@@ -1136,6 +1136,7 @@ name = "graphing_stuff"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "common",
  "eframe",
  "egui_node_graph2",
  "shader_paser",
@@ -2224,6 +2225,7 @@ name = "rendering_stuff"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "common",
  "egui",
  "egui-wgpu",
  "image",

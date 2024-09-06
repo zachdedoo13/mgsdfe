@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use std::thread::sleep;
-use std::time::Duration;
 use egui_node_graph2::{InputId, Node, NodeId, OutputId};
 
+use common::{get, SHADER_GRAPH_DATA};
 use shader_paser::{Combination, CombinationType, Layer, Passer, PassOptions, PassType, SDF};
 use shader_paser::datastructures::{Float, FloatOrOss, Vec3};
 use shader_paser::transform_mat::Transform;
@@ -11,8 +10,8 @@ use crate::graph::{MyEditorState, MyGraph, MyNodeData};
 use crate::nodes_and_types::{ConnectionTypes, NodeTypes, ValueTypes};
 
 type InOutCash = HashMap<OutputId, InputId>;
-type OutputsCash = HashMap<(OutputId), NodeId>;
-type InputsCash = HashMap<(InputId), NodeId>;
+type OutputsCash = HashMap<OutputId, NodeId>;
+type InputsCash = HashMap<InputId, NodeId>;
 
 pub struct Traverser<'a> {
    graph_state: Option<&'a mut MyEditorState>,
@@ -20,8 +19,6 @@ pub struct Traverser<'a> {
    outputs_cash: OutputsCash,
    inputs_cash: InputsCash,
    out_to_in_cash: InOutCash,
-
-   depth: i32,
 }
 impl<'a> Traverser<'a> {
    pub fn new() -> Self {
@@ -30,7 +27,6 @@ impl<'a> Traverser<'a> {
          outputs_cash: HashMap::new(),
          inputs_cash: HashMap::new(),
          out_to_in_cash: HashMap::new(),
-         depth: 0,
       }
    }
 
@@ -55,21 +51,24 @@ impl<'a> Traverser<'a> {
          }
       }
 
-
-      /// disclose nodes
+      // disclose nodes
       let out = self.disclose_node(start_node_id).expect("Failed to traverse tree");
-
-
-      // println!("Out\n\n{out:?}\n\nend");
 
       let mut passer = Passer {
          contents: &out,
          pass_options: PassOptions { pass_type: PassType::BruteForce },
       };
-      let mut code = passer.pass();
 
-      // println!("Code\n\n{code}\n\nCode end\n");
-      code.push_str("test");
+
+      let code = passer.pass();
+
+      let sdg = &mut get!(SHADER_GRAPH_DATA);
+
+      if code != sdg.shader_code.code {
+         sdg.update_listener.queue_compile = true;
+      }
+
+      sdg.shader_code.code = code;
 
 
       self.graph_state = None;
@@ -83,12 +82,24 @@ impl<'a> Traverser<'a> {
          let layer = match &node.user_data.template {
             NodeTypes::Main => {
                let children_ids = find_tree_children_of_node(node_id, &self.inputs_cash, graph_state).unwrap();
-               let children = children_ids.iter().filter_map(|&(id, node_type)| {
+               let children = children_ids.iter().filter_map(|&(id, _node_type)| {
                   self.disclose_node(id)
                }).collect();
 
                Layer::Union {
-                  transform: Default::default(),
+                  transform: Transform {
+                     position: Vec3 {
+                        x: Float { val: FloatOrOss::Float(0.0), id: 0},
+                        y: Float { val: FloatOrOss::Float(0.0), id: 0},
+                        z: Float { val: FloatOrOss::Float(0.0), id: 0},
+                     },
+                     rotation: Vec3 {
+                        x: Float { val: FloatOrOss::Float(0.0), id: 0},
+                        y: Float { val: FloatOrOss::Float(0.0), id: 0},
+                        z: Float { val: FloatOrOss::Float(0.0), id: 0},
+                     },
+                     scale: Float { val: FloatOrOss::Float(1.0), id: 0},
+                  },
                   bounds: Default::default(),
                   combination: Combination { comb: CombinationType::Union, strength: Default::default() },
                   children,
@@ -110,7 +121,7 @@ impl<'a> Traverser<'a> {
                };
 
                let children_ids = find_tree_children_of_node(node_id, &self.inputs_cash, graph_state).unwrap();
-               let children = children_ids.iter().filter_map(|&(id, node_type)| {
+               let children = children_ids.iter().filter_map(|&(id, _node_type)| {
                   self.disclose_node(id)
                }).collect();
 
@@ -220,7 +231,7 @@ fn find_tree_children_of_node(
    let graph = &graph_state.graph;
    let node = &graph[node_id];
 
-   let tree_children: Vec<(NodeId, NodeTypes)> = node.outputs.iter().filter_map(|(data, output_id)| {
+   let tree_children: Vec<(NodeId, NodeTypes)> = node.outputs.iter().filter_map(|(_data, output_id)| {
       if let Some(out) = graph.outputs.get(*output_id) {
          if let ConnectionTypes::Tree = out.typ {
             // todo O(n^2)

@@ -1,5 +1,6 @@
 use std::borrow::Cow;
-use std::fmt::{Debug, format};
+use std::fmt::Debug;
+
 use eframe::egui;
 use eframe::egui::{Color32, ComboBox, DragValue, Ui};
 use egui_node_graph2::{DataTypeTrait, Graph, InputParamKind, NodeId, NodeTemplateTrait, WidgetValueTrait};
@@ -36,7 +37,6 @@ impl NodeTemplateTrait for NodeTypes {
          NodeTypes::Union => "New Union",
          NodeTypes::Shape => "New Shape",
          NodeTypes::Transform => "New transform",
-         _ => "New x"
       })
    }
 
@@ -101,7 +101,7 @@ impl NodeTemplateTrait for NodeTypes {
                ValueTypes::Transform {
                   position: [0.0, 0.0, 0.0],
                   rotation: [0.0, 0.0, 0.0],
-                  scale: 0.0,
+                  scale: 1.0,
                },
                InputParamKind::ConnectionOrConstant,
                true,
@@ -132,7 +132,7 @@ impl NodeTemplateTrait for NodeTypes {
                ConnectionTypes::None,
                ValueTypes::SdfData {
                   val: SdfType::Sphere,
-                  data: [0.0, 0.0, 0.0],
+                  data: [1.0, 1.0, 1.0],
                },
                InputParamKind::ConstantOnly,
                true,
@@ -145,7 +145,7 @@ impl NodeTemplateTrait for NodeTypes {
                ValueTypes::Transform {
                   position: [0.0, 0.0, 0.0],
                   rotation: [0.0, 0.0, 0.0],
-                  scale: 0.0,
+                  scale: 1.0,
                },
                InputParamKind::ConnectionOrConstant,
                true,
@@ -160,7 +160,7 @@ impl NodeTemplateTrait for NodeTypes {
                ValueTypes::Transform {
                   position: [0.0, 0.0, 0.0],
                   rotation: [0.0, 0.0, 0.0],
-                  scale: 0.0,
+                  scale: 1.0,
                },
                InputParamKind::ConstantOnly,
                true,

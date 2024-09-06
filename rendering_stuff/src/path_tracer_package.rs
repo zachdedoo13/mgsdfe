@@ -1,14 +1,13 @@
 use std::borrow::Cow;
 use std::mem::size_of;
 use std::panic::AssertUnwindSafe;
+
 use bytemuck::bytes_of;
 use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages};
 use wgpu::naga::{FastHashMap, ShaderStage};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use crate::utility::structs::{DualStorageTexturePackage, PathTracerUniformSettings, RenderPack, RenderSettings, SampledTexturePackage, StorageTexturePackage};
-
-
-
+use common::{get, SHADER_GRAPH_DATA};
+use crate::utility::structs::{DualStorageTexturePackage, GlslPreprocessor, PathTracerUniformSettings, RenderPack, RenderSettings, SampledTexturePackage, StorageTexturePackage};
 
 pub struct PathTracePackage {
    pub path_tracer_pipeline_layout: PipelineLayout,
@@ -24,7 +23,7 @@ impl PathTracePackage {
       let path_tracer_uniform = PathTracerUniform::new(device, &RenderSettings::default().path_tracer_uniform_settings);
 
       let london: &'static [u8] = include_bytes!("shaders/assets/london.jpg");
-      let test_tex = SampledTexturePackage::new(device, queue, london);
+      let test_tex = SampledTexturePackage::new(device, queue, london); // todo dont forget about this
 
       let one = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
       let two = StorageTexturePackage::new(device, (render_settings.width as f32, render_settings.height as f32));
@@ -70,9 +69,11 @@ impl PathTracePackage {
       self.path_tracer_uniform.update_with_data(&render_pack.queue, render_settings.path_tracer_uniform_settings);
       self.path_tracer_textures.update(&render_pack.device, check);
 
-      if render_settings.remake_pipeline {
+      if render_settings.remake_pipeline || get!(SHADER_GRAPH_DATA).update_listener.queue_compile {
          self.remake_pipeline(&render_pack.device);
+
          render_settings.remake_pipeline = false;
+         get!(SHADER_GRAPH_DATA).update_listener.queue_compile = false;
       }
    }
 
@@ -119,14 +120,31 @@ impl PathTracePackage {
             compilation_options: Default::default(),
          });
       }
-
-
    }
 }
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   let source = include_str!("shaders/path_tracer.glsl").to_string();
-   // let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
+   let no_map = include_str!("shaders/no_map_raymarch.glsl").to_string();
+   // let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/no_map_raymarch.glsl").unwrap(); // for testing only
+   // let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
+
+
+   let map = &get!(SHADER_GRAPH_DATA).shader_code.code;
+
+   let mapped_code: String = if map.is_empty() {
+      GlslPreprocessor::do_the_thing(&no_map, vec![("map".to_string(), "Hit cast_ray(Ray ray) { return Hit(0.0); }".to_string())])
+   }
+   else {
+      GlslPreprocessor::do_the_thing(&no_map, vec![("map".to_string(), map.clone())])
+   };
+
+
+
+   println!("{}", mapped_code);
+
+
+   let source = mapped_code;
+
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,

@@ -1,4 +1,5 @@
 use wgpu::{Color, CommandEncoder, Device, IndexFormat, PipelineLayoutDescriptor, RenderPipeline, TextureFormat, TextureView};
+
 use crate::inbuilt::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
 use crate::inbuilt::vertex_package::{Vertex, VertexPackage};
 use crate::utility::structs::StorageTexturePackage;

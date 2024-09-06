@@ -1,6 +1,5 @@
 use crate::datastructures::{Float, Vec3};
 
-
 #[derive(Debug)]
 pub struct Transform {
    pub position: Vec3,
@@ -14,12 +13,12 @@ impl Transform {
       let tfr: String = transform_reference.into();
 
       let pos = match self.position.is_zero() {
-         true => format!("{name} = move({name}, {});", self.position.comp()),
+         true => format!("{name} = move({name}, {} * (1.0 / {}));", self.position.comp(), self.scale.comp()),
          false => format!("//position zero"),
       };
 
       let rot = match self.rotation.is_zero() {
-         true => format!("{name} *= rot3D({name}, {});", self.rotation.comp()),
+         true => format!("{name} = rot3D({name}, {});", self.rotation.comp()),
          false => format!("//rotation zero"),
       };
 

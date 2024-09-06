@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "app_bin"
+path = "src/main.rs"
+
 
 [dependencies]
 egui = "0.28.1"
@@ -20,7 +24,6 @@ wgpu = { version = "0.20.1", features = ["glsl", "webgpu"] }
 log = "0.4"
 bytemuck = "1.14.0"
 once_cell = "1.19.0"
-instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
 serde = { version = "1.0.208", features = ["derive"] }
 
 rendering_stuff = { path = "../rendering_stuff" }

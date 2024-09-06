@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 
+use strum::EnumIter;
+
+use datastructures::*;
+use transform_mat::*;
+
 pub mod datastructures;
 pub mod transform_mat;
-
-use strum::EnumIter;
-use transform_mat::*;
-use datastructures::*;
 
 // less basic
 
@@ -21,7 +22,7 @@ impl SDF {
       match self.sdf_type {
          SdfType::Sphere => format!("sdSphere({transform}, 1.0)"),
 
-         SdfType::Cube => format!("sdCube({transform}, vec3(1.0, 1.0, 1.0)"),
+         SdfType::Cube => format!("sdCube({transform}, {})", self.settings.comp()),
 
          SdfType::Custom { .. } => todo!(),
       }
@@ -104,7 +105,6 @@ pub enum Layer {
       combination: Combination,
       children: Vec<Layer>,
    },
-   Mod,
 }
 
 
@@ -274,8 +274,6 @@ impl Passer<'_> {
                combination,
                children,
             } => disclose_union(transform, combination, children, parcel),
-
-            Layer::Mod => todo!(),
          }
       }
 
@@ -347,8 +345,6 @@ fn remove_spaces_from_string(input: &str, space_count: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-   use std::time::{Duration, Instant};
-
    use super::*;
 
    #[test]

@@ -18,6 +18,7 @@ anyhow = "1.0"
 serde = { version = "1.0", optional = true }
 strum = {version = "0.26.3", features = ["derive"]}
 shader_paser = {path = "../shader_paser"}
+common = { path = "../common" }
 
 [features]
 default = []

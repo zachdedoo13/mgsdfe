@@ -1,8 +1,12 @@
 use std::iter;
+
 use egui::{Image, Key, PointerButton, Sense, Ui, Vec2};
 use egui::load::SizedTexture;
 use egui_wgpu::Renderer;
 use wgpu::{CommandEncoderDescriptor, Device, Extent3d, Queue};
+
+use common::{get, TIME};
+
 use crate::path_tracer_package::PathTracePackage;
 use crate::render_texture_pipeline::RenderTexturePipeline;
 use crate::utility::structs::{EguiTexturePackage, RenderPack, RenderSettings};
@@ -87,6 +91,8 @@ impl MehRenderer {
       );
 
       // todo shit
+      let delta_time = get!(TIME).delta_time as f32;
+
       let cd: &mut [f32; 3] = &mut render_settings.path_tracer_uniform_settings.cam_dir;
 
       if response.dragged_by(PointerButton::Secondary) {
@@ -101,7 +107,7 @@ impl MehRenderer {
          cd[2] += delta.x;
       }
 
-      let speed = 0.01;
+      let speed = 5.0 * delta_time;
       ui.input(|i| {
          let pos = &mut render_settings.path_tracer_uniform_settings.cam_pos;
 

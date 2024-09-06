@@ -471,3 +471,54 @@ impl MeTex {
       }
    }
 }
+
+
+pub struct GlslPreprocessor;
+impl GlslPreprocessor {
+   pub fn do_the_thing(shader_code: &String, overrides: Vec<(String, String)>) -> String {
+      let out_code = Self::handle_hash(shader_code, overrides);
+
+      out_code
+   }
+
+   fn handle_hash(shader_code: &String, overrides: Vec<(String, String)>) -> String {
+      let mut out = String::new();
+      let mut past_includes = vec![];
+
+      'lines: for line in shader_code.lines() {
+         if let Some(hash_pos) = line.find("#") {
+            let directive_full = &line[hash_pos + 1..].trim();
+            let parts: Vec<&str> = directive_full.split_whitespace().collect();
+            let directive = parts[0];
+            let following_text = parts.get(1).unwrap_or(&"");
+
+            if directive == "include" {
+               if past_includes.contains(following_text) {
+                  out.push_str(format!("// ignored repeat include {}\n", following_text).as_str());
+                  continue;
+               }
+
+               for (id_str, replacement_code) in &overrides {
+                  if following_text == id_str {
+                     out.push_str(format!("// included override {}\n", id_str).as_str());
+                     out.push_str(replacement_code);
+                     out.push_str("\n// end include\n");
+                     past_includes.push(following_text);
+                     continue 'lines;
+                  }
+               }
+
+               out.push_str(format!("// could not find override for {}\n", following_text).as_str());
+            } else {
+               out.push_str(line);
+               out.push('\n');
+            }
+         } else {
+            out.push_str(line);
+            out.push('\n');
+         }
+      }
+
+      out
+   }
+}

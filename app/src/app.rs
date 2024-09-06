@@ -6,17 +6,17 @@ use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
 use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
-use common::{get, init_static};
+
+use common::{get, init_static, TIME};
 use graphing_stuff::graph::NodeGraph;
 use rendering_stuff::render_state::MehRenderer;
 use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
 
 use crate::{load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
-use crate::packages::time_package::TimePackage;
 use crate::utility::functions::oss;
 
 // Globals
-init_static!(TIME: TimePackage => { TimePackage::new() });
+
 
 init_static!(RENDER_SETTINGS: RenderSettings => { RenderSettings::default() });
 
