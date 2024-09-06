@@ -60,15 +60,16 @@ impl<'a> Traverser<'a> {
       let out = self.disclose_node(start_node_id).expect("Failed to traverse tree");
 
 
-      println!("Out\n\n{out:?}\n\nend");
+      // println!("Out\n\n{out:?}\n\nend");
 
       let mut passer = Passer {
          contents: &out,
          pass_options: PassOptions { pass_type: PassType::BruteForce },
       };
-      let code = passer.pass();
+      let mut code = passer.pass();
 
-      println!("Code\n\n{code}\n\nCode end\n");
+      // println!("Code\n\n{code}\n\nCode end\n");
+      code.push_str("test");
 
 
       self.graph_state = None;
