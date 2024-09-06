@@ -1,26 +1,24 @@
-use std::sync::Mutex;
 use std::time::Duration;
 
 use eframe::{App, CreationContext, Frame};
 use egui::{CentralPanel, ComboBox, Context, DragValue, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
 use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use wgpu::AdapterInfo;
-
+use common::{get, init_static};
 use graphing_stuff::graph::NodeGraph;
 use rendering_stuff::render_state::MehRenderer;
 use rendering_stuff::utility::structs::{RenderPack, RenderSettings};
 
-use crate::{get, init_static, load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
+use crate::{load_persisted, load_temp, render_pack_from_frame, save_persisted, save_temp};
 use crate::packages::time_package::TimePackage;
 use crate::utility::functions::oss;
 
 // Globals
-init_static!(TIME: TimePackage => {TimePackage::new()});
+init_static!(TIME: TimePackage => { TimePackage::new() });
 
-init_static!(RENDER_SETTINGS: RenderSettings => {RenderSettings::default()});
+init_static!(RENDER_SETTINGS: RenderSettings => { RenderSettings::default() });
 
 
 pub struct MehApp {

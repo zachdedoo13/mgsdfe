@@ -25,6 +25,7 @@ serde = { version = "1.0.208", features = ["derive"] }
 
 rendering_stuff = { path = "rendering_stuff" }
 graphing_stuff = { path = "graphing_stuff" }
+common = { path = "common" }
 
 #egui extentions
 egui_plot = "0.28.1"

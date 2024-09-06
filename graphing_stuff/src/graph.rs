@@ -1,10 +1,8 @@
-use std::borrow::Cow;
-
 use eframe::egui;
-use eframe::egui::{Color32, ComboBox, DragValue, Ui};
-use egui_node_graph2::{DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId, NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait};
+use eframe::egui::{Color32, Ui};
+use egui_node_graph2::{Graph, GraphEditorState, NodeDataTrait, NodeId, NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait};
 use strum::IntoEnumIterator;
-use shader_paser::CombinationType;
+
 use crate::graph_traverser::Traverser;
 use crate::nodes_and_types::*;
 
@@ -28,7 +26,6 @@ impl NodeDataTrait for MyNodeData {
    where
        MyResponse: UserResponseTrait,
    {
-
       let mut responses = vec![];
       let is_active = user_state
           .active_node
@@ -59,7 +56,6 @@ impl NodeDataTrait for MyNodeData {
       responses
    }
 }
-
 
 
 /// internode interactivity
@@ -95,7 +91,6 @@ impl NodeTemplateIter for AllMyNodeTemplates {
 }
 
 
-
 // Graph code
 pub type MyGraph = Graph<MyNodeData, ConnectionTypes, ValueTypes>;
 pub type MyEditorState = GraphEditorState<MyNodeData, ConnectionTypes, ValueTypes, NodeTypes, MyGraphState>;
@@ -108,10 +103,6 @@ pub struct NodeGraph {
 }
 impl NodeGraph {
    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-      // let state = cc
-      //     .storage
-      //     .and_then(|storage| eframe::get_value(storage, PERSISTENCE_KEY))
-      //     .unwrap_or_default();
       Self {
          state: MyEditorState::default(),
          graph_state: MyGraphState::default(),
@@ -119,7 +110,6 @@ impl NodeGraph {
    }
 
    pub fn update(&mut self, ui: &mut Ui) {
-
       let graph_response = egui::CentralPanel::default()
           .show_inside(ui, |ui| {
              self.state.draw_graph_editor(
