@@ -1,17 +1,25 @@
 use std::collections::HashMap;
-use egui_node_graph2::{InputId, NodeId, OutputId, Node, Graph, InputParam};
+use std::thread::sleep;
+use std::time::Duration;
+use egui_node_graph2::{InputId, Node, NodeId, OutputId};
 
-use shader_paser::{Combination, CombinationType, Layer, Passer, PassOptions, PassType};
+use shader_paser::{Combination, CombinationType, Layer, Passer, PassOptions, PassType, SDF};
+use shader_paser::datastructures::{Float, FloatOrOss, Vec3};
 use shader_paser::transform_mat::Transform;
+
 use crate::graph::{MyEditorState, MyGraph, MyNodeData};
 use crate::nodes_and_types::{ConnectionTypes, NodeTypes, ValueTypes};
+
+type InOutCash = HashMap<OutputId, InputId>;
+type OutputsCash = HashMap<(OutputId), NodeId>;
+type InputsCash = HashMap<(InputId), NodeId>;
 
 pub struct Traverser<'a> {
    graph_state: Option<&'a mut MyEditorState>,
 
-   outputs_cash: HashMap<(OutputId), NodeId>,
-   inputs_cash: HashMap<(InputId), NodeId>,
-   out_to_in_cash: HashMap<OutputId, InputId>,
+   outputs_cash: OutputsCash,
+   inputs_cash: InputsCash,
+   out_to_in_cash: InOutCash,
 
    depth: i32,
 }
@@ -60,7 +68,7 @@ impl<'a> Traverser<'a> {
       };
       let code = passer.pass();
 
-      // println!("Code\n\n{code}\n\nCode end\n");
+      println!("Code\n\n{code}\n\nCode end\n");
 
 
       self.graph_state = None;
@@ -81,27 +89,59 @@ impl<'a> Traverser<'a> {
                Layer::Union {
                   transform: Default::default(),
                   bounds: Default::default(),
-                  combination: Combination {
-                     comb: CombinationType::Union,
-                     strength: Default::default(),
-                  },
+                  combination: Combination { comb: CombinationType::Union, strength: Default::default() },
                   children,
                }
             }
 
             NodeTypes::Union => {
-               todo!()
+               let trans_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "transform").unwrap();
+               let transform = convert_transform(trans_val);
+
+               let comb_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "union_type").unwrap();
+               let combination = {
+                  if let ValueTypes::UnionType { ty } = comb_val {
+                     Combination {
+                        comb: ty,
+                        strength: Default::default(),
+                     }
+                  } else { panic!() }
+               };
+
+               let children_ids = find_tree_children_of_node(node_id, &self.inputs_cash, graph_state).unwrap();
+               let children = children_ids.iter().filter_map(|&(id, node_type)| {
+                  self.disclose_node(id)
+               }).collect();
+
+
+               Layer::Union {
+                  transform,
+                  bounds: Default::default(),
+                  combination,
+                  children,
+               }
             }
+
             NodeTypes::Shape => {
-               let transform = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "transform").unwrap();
-               println!("{transform:?}");
+               let trans_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "transform").unwrap();
+               let transform = convert_transform(trans_val);
+
+               let sdf_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "sdf").unwrap();
+               let sdf = {
+                  if let ValueTypes::SdfData { val, data } = sdf_val {
+                     SDF {
+                        sdf_type: val,
+                        settings: convert_vec3(data),
+                     }
+                  } else { panic!() }
+               };
 
 
                Layer::Shape {
-                  transform: Default::default(),
+                  transform,
                   material: Default::default(),
                   bounds: Default::default(),
-                  sdf: Default::default(),
+                  sdf,
                }
             }
 
@@ -113,16 +153,39 @@ impl<'a> Traverser<'a> {
 
       None
    }
+}
 
+fn convert_transform(value_types: ValueTypes) -> Transform {
+   if let ValueTypes::Transform { position, rotation, scale } = value_types {
+      Transform {
+         position: convert_vec3(position),
+         rotation: convert_vec3(rotation),
+         scale: convert_float(scale),
+      }
+   } else { panic!() }
+}
 
+fn convert_vec3(input: [f32; 3]) -> Vec3 {
+   Vec3 {
+      x: convert_float(input[0]),
+      y: convert_float(input[1]),
+      z: convert_float(input[2]),
+   }
+}
+
+fn convert_float(input: f32) -> Float {
+   Float {
+      val: FloatOrOss::Float(input),
+      id: 0,
+   }
 }
 
 fn evaluate_connection<T: Into<String>>(
    node: &Node<MyNodeData>,
    graph: &MyGraph,
-   out_to_in_cash: &HashMap<OutputId, InputId>,
-   outputs_cash: &HashMap<OutputId, NodeId>,
-   name: T
+   out_to_in_cash: &InOutCash,
+   outputs_cash: &OutputsCash,
+   name: T,
 ) -> Option<ValueTypes> {
    let name = name.into();
 
@@ -150,8 +213,8 @@ fn evaluate_connection<T: Into<String>>(
    }
 }
 fn find_tree_children_of_node(
-   node_id: NodeId, inputs_cash: &HashMap<(InputId),
-      NodeId>, graph_state: &MyEditorState) -> Option<Vec<(NodeId, NodeTypes)>>
+   node_id: NodeId, inputs_cash: &InputsCash,
+   graph_state: &MyEditorState) -> Option<Vec<(NodeId, NodeTypes)>>
 {
    let graph = &graph_state.graph;
    let node = &graph[node_id];

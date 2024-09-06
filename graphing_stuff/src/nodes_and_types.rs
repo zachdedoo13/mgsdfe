@@ -89,7 +89,7 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "union_type".to_string(),
                ConnectionTypes::None,
-               ValueTypes::UnionType { val: CombinationType::Union },
+               ValueTypes::UnionType { ty: CombinationType::Union },
                InputParamKind::ConstantOnly,
                true,
             );
@@ -168,6 +168,12 @@ impl NodeTemplateTrait for NodeTypes {
 
             graph.add_output_param(
                node_id,
+               "Doesn't work with\nmultiple connections".to_string(),
+               ConnectionTypes::None,
+            );
+
+            graph.add_output_param(
+               node_id,
                "Out".to_string(),
                ConnectionTypes::Transform,
             );
@@ -193,6 +199,7 @@ impl DataTypeTrait<MyGraphState> for ConnectionTypes {
    fn data_type_color(&self, _user_state: &mut MyGraphState) -> Color32 {
       match self {
          ConnectionTypes::Float => Color32::RED,
+         ConnectionTypes::None => Color32::TRANSPARENT,
          _ => Color32::GOLD,
       }
    }
@@ -216,7 +223,7 @@ pub enum ValueTypes {
    Tree,
    Float { val: f32 },
 
-   UnionType { val: CombinationType },
+   UnionType { ty: CombinationType },
 
    Transform { position: [f32; 3], rotation: [f32; 3], scale: f32 },
 
@@ -264,7 +271,7 @@ impl WidgetValueTrait for ValueTypes {
 
          ValueTypes::None => {}
 
-         ValueTypes::UnionType { val } => {
+         ValueTypes::UnionType { ty: val } => {
             combination_box(val, ui);
          }
 
