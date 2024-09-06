@@ -125,8 +125,8 @@ impl PathTracePackage {
 }
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   // let source = include_str!("shaders/path_tracer.glsl").to_string();
-   let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
+   let source = include_str!("shaders/path_tracer.glsl").to_string();
+   // let source = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/tex_test.glsl").unwrap(); // for testing only
 
    let shader_mod = ShaderModuleDescriptor {
       label: None,
@@ -136,14 +136,6 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
          defines: FastHashMap::default(), // Adjust as needed for your shader
       },
    };
-
-   // std::panic::set_hook(Box::new(|panic_info| {
-   //    if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
-   //       eprintln!("Panic occurred");
-   //    } else {
-   //       eprintln!("Panic occurred");
-   //    }
-   // }));
 
    let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
       let prev_hook = std::panic::take_hook();
