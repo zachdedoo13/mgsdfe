@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use egui_node_graph2::{InputId, Node, NodeId, OutputId};
 
 use common::{get, SHADER_GRAPH_DATA};
@@ -110,20 +111,25 @@ impl<'a> Traverser<'a> {
                let trans_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "transform").unwrap();
                let transform = convert_transform(trans_val);
 
+
+               let mut children_order;
+
                let comb_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "union_type").unwrap();
                let combination = {
-                  if let ValueTypes::UnionType { ty } = comb_val {
+                  if let ValueTypes::UnionType { ty, strength, order } = comb_val {
+                     children_order = order;
                      Combination {
                         comb: ty,
-                        strength: Default::default(),
+                        strength: Float { val: FloatOrOss::Float(strength), id: 0 },
                      }
                   } else { panic!() }
                };
 
                let children_ids = find_tree_children_of_node(node_id, &self.inputs_cash, graph_state).unwrap();
-               let children = children_ids.iter().filter_map(|&(id, _node_type)| {
+               let mut children: Vec<Layer> = children_ids.iter().filter_map(|&(id, _node_type)| {
                   self.disclose_node(id)
                }).collect();
+               if children_order { children.reverse() };
 
 
                Layer::Union {

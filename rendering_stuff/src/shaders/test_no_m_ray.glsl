@@ -259,7 +259,111 @@ bool bool_hit(vec2 intersect) {
 }
 
 
-#include map
+Hit map(vec3 p_in) {
+    // init
+    Hit d0u0 = Hit(100000.0);
+    vec3 t = p_in;
+
+    // start
+
+
+    // union
+    {
+        // init and transform
+        Hit d1u0 = d0u0;
+
+        vec3 d1u0t = t;
+        d1u0t /= (1);
+        //position zero
+        //rotation zero
+
+
+        // children
+        {
+            // union
+            {
+                // init and transform
+                Hit d2u0 = d1u0;
+
+                vec3 d2u0t = d1u0t;
+                d2u0t /= (1);
+                //position zero
+                //rotation zero
+
+                // children
+                {
+                    // shape
+                    {
+
+                        vec3 d3u1t = d2u0t;
+                        d3u1t /= (1.0);
+                        d3u1t = move(d3u1t, vec3((1.15), (0.85), (0.15)) * (1.0 / (0.73)));
+                        //rotation zero
+
+
+                        Hit d3s1 = Hit(sdCube(d3u1t, vec3((1), (1), (1))));
+
+                        // cleanup
+                        d3s1.d = scale_correction(d3s1.d, (1.0));
+                        d2u0 = d3s1;
+                    }
+
+                    // shape
+                    {
+
+                        vec3 d3u0t = d2u0t;
+                        d3u0t /= (1);
+                        d3u0t = move(d3u0t, vec3((0.22), (0), (0)) * (1.0 / (1)));
+                        //rotation zero
+
+
+                        Hit d3s0 = Hit(sdSphere(d3u0t, 1.0));
+
+                        // cleanup
+                        d3s0.d = scale_correction(d3s0.d, (1));
+                        d2u0 = opSubtraction(d3s0, d2u0);
+                    }
+                }
+
+                // cleanup
+                d2u0.d = scale_correction(d2u0.d, (1));
+                d1u0 = opUnion(d2u0, d1u0);
+            }
+
+        }
+
+        // cleanup
+        d1u0.d = scale_correction(d1u0.d, (1));
+        d0u0 = opUnion(d1u0, d0u0);
+    }
+
+    Hit s1 = Hit(sdCube(t, vec3(1.0)));
+    Hit s2 = Hit(sdSphere(move(t, vec3(((sin(s.time) * 1.0) * 0.5 + 0.5) - 0.2, 0.5, -0.4)), 0.75));
+
+    d0u0 = s1;
+
+    d0u0 = opXor(d0u0, s2);
+
+
+    return d0u0;
+}
+
+
+
+
+Hit cast_ray(Ray ray) {
+    float t = 0.0;
+    for (int i = 0; i < s.steps_per_ray; i++) {
+        vec3 p = ray.ro + ray.rd * t;
+        Hit hit = map(p);
+        t += hit.d;
+
+        if (hit.d < MHD) break;
+        if (t > FP) break;
+    }
+    return Hit(t);
+}
+
 
 
 ////////////////////
@@ -289,8 +393,8 @@ void main() {
 
     // setup
     Ray ray = Ray(
-        vec3(s.pos_x, s.pos_y, s.pos_z),
-        normalize(vec3(uv, 1.0))
+    vec3(s.pos_x, s.pos_y, s.pos_z),
+    normalize(vec3(uv, 1.0))
     );
 
     // Usage

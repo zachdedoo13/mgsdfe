@@ -89,7 +89,7 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "union_type".to_string(),
                ConnectionTypes::None,
-               ValueTypes::UnionType { ty: CombinationType::Union },
+               ValueTypes::UnionType { ty: CombinationType::Union, strength: 1.0, order: true },
                InputParamKind::ConstantOnly,
                true,
             );
@@ -223,7 +223,7 @@ pub enum ValueTypes {
    Tree,
    Float { val: f32 },
 
-   UnionType { ty: CombinationType },
+   UnionType { ty: CombinationType, strength: f32, order: bool },
 
    Transform { position: [f32; 3], rotation: [f32; 3], scale: f32 },
 
@@ -271,8 +271,20 @@ impl WidgetValueTrait for ValueTypes {
 
          ValueTypes::None => {}
 
-         ValueTypes::UnionType { ty: val } => {
-            combination_box(val, ui);
+         ValueTypes::UnionType { ty, strength, order } => {
+            ui.group(|ui| {
+               combination_box(ty, ui);
+               ui.horizontal(|ui| {
+                  ui.add(DragValue::new(strength).speed(0.01));
+
+
+                  if ui.button(if *order {"<-"} else {"->"}).clicked() {
+                     *order = !*order;
+                  }
+               });
+
+            });
+
          }
 
          ValueTypes::Transform { position, rotation, scale } => {

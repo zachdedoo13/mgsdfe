@@ -61,24 +61,41 @@ pub struct Combination {
    pub strength: Float,
 }
 impl Combination {
-   fn comp_map<T: Into<String>>(&self, name: T, union_ref: T) -> String {
+   fn comp_map<T: Into<String>>(&self, name: T, union_ref: T, init_set: bool) -> String {
       let name = name.into();
       let union_ref = union_ref.into();
-      match self.comb {
-         CombinationType::Union => format!("{union_ref} = opUnion({name}, {union_ref});"),
-         CombinationType::SmoothUnion => format!("{union_ref} = opSmoothUnion({name}, {union_ref}, {});", self.strength.comp()),
-         CombinationType::Subtraction => todo!(),
-         CombinationType::SmoothSubtraction => todo!(),
+      if !init_set {
+         match self.comb {
+            CombinationType::Union => format!("{union_ref} = opUnion({name}, {union_ref});"),
+            CombinationType::SmoothUnion => format!("{union_ref} = opSmoothUnion({name}, {union_ref}, {});", self.strength.comp()),
+
+            CombinationType::Subtraction => format!("{union_ref} = opSubtraction({name}, {union_ref});"),
+            CombinationType::SmoothSubtraction => format!("{union_ref} = opSmoothSubtraction({name}, {union_ref}, {});", self.strength.comp()),
+
+            CombinationType::Intersection => format!("{union_ref} = opIntersection({name}, {union_ref});"),
+            CombinationType::SmoothIntersection => format!("{union_ref} = opSmoothIntersection({name}, {union_ref}, {});", self.strength.comp()),
+
+            CombinationType::XOR => format!("{union_ref} = opXor({name}, {union_ref});"),
+         }
       }
+      else {
+         format!("{union_ref} = {name};")
+      }
+
    }
 }
-
 #[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
 pub enum CombinationType {
    Union,
    SmoothUnion,
+
    Subtraction,
    SmoothSubtraction,
+
+   Intersection,
+   SmoothIntersection,
+
+   XOR
 }
 impl CombinationType {
    pub fn as_str(&self) -> &str {
@@ -87,6 +104,9 @@ impl CombinationType {
          CombinationType::SmoothUnion => "Smooth Union",
          CombinationType::Subtraction => "Subtraction",
          CombinationType::SmoothSubtraction => "Smooth Subtraction",
+         CombinationType::Intersection => "Intersection",
+         CombinationType::SmoothIntersection => "Smooth Intersection",
+         CombinationType::XOR => "XOR"
       }
    }
 }
@@ -193,7 +213,7 @@ impl Passer<'_> {
 
          let sd = sdf.comp_map(trans_name);
 
-         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
+         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string(), u_index == 0);
 
          let out = format!(r#"
          // shape
@@ -224,7 +244,7 @@ impl Passer<'_> {
          let trans = add_tabs_to_string(trans.as_str(), 3);
          let scale_cleanup = transform.scale_correction(name.clone());
 
-         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string());
+         let close = parcel.upper_union_comb.comp_map(name.clone(), parcel.upper_union.to_string(), false);
 
          let mut childs = String::new();
          for (i, child) in children.iter().enumerate() {

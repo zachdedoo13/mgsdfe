@@ -6,7 +6,9 @@ use bytemuck::bytes_of;
 use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages};
 use wgpu::naga::{FastHashMap, ShaderStage};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
+
 use common::{get, SHADER_GRAPH_DATA};
+
 use crate::utility::structs::{DualStorageTexturePackage, GlslPreprocessor, PathTracerUniformSettings, RenderPack, RenderSettings, SampledTexturePackage, StorageTexturePackage};
 
 pub struct PathTracePackage {
@@ -50,8 +52,6 @@ impl PathTracePackage {
          entry_point: "main",
          compilation_options: Default::default(),
       });
-
-
 
 
       Self {
@@ -125,8 +125,10 @@ impl PathTracePackage {
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
    let no_map = include_str!("shaders/no_map_raymarch.glsl").to_string();
-   // let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/no_map_raymarch.glsl").unwrap(); // for testing only
+//    let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/no_map_raymarch.glsl").unwrap(); // for testing only
    // let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/path_tracer.glsl").unwrap(); // for testing only
+
+   // let no_map = std::fs::read_to_string("C:/Users/zacha/RustroverProjects/mgsdfe/rendering_stuff/src/shaders/test_no_m_ray.glsl").unwrap(); // for testing only
 
 
    let map = &get!(SHADER_GRAPH_DATA).shader_code.code;
