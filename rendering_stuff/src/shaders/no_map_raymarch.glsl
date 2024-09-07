@@ -31,8 +31,17 @@ layout(set = 2, binding = 0) uniform PathTracerUniformSettings {
     float rot_z;
 } s;
 
+/* Mat mat4x4
+[albeto x3, __],
+[emmisive x3, __],
+[spec_chance, spec_rough, IOR, refrac_chance],
+[refrac_rough, refrac_color x3],
+*/
+
+#define ZERO_MAT mat4(0.0)
+
 struct Ray { vec3 ro; vec3 rd; };
-struct Hit { float d;  };
+struct Hit { float d; mat4 mat; };
 
 
 #define FP 200.0
@@ -142,45 +151,55 @@ vec3 rot3D(vec3 p, vec3 rot) {
 }
 
 vec3 rotateRayDirection(vec3 direction, vec3 rotation) {
-    // Rotation around X-axis
-    float cosX = cos(rotation.x);
-    float sinX = sin(rotation.x);
-    mat3 rotX = mat3(
-    1.0, 0.0, 0.0,
-    0.0, cosX, -sinX,
-    0.0, sinX, cosX
-    );
+    // shinky ass gpt code
 
-    // Rotation around Y-axis
-    float cosY = cos(rotation.y);
-    float sinY = sin(rotation.y);
-    mat3 rotY = mat3(
-    cosY, 0.0, sinY,
-    0.0, 1.0, 0.0,
-    -sinY, 0.0, cosY
-    );
+    // Convert Euler angles to radians
+    vec3 rad = radians(rotation);
 
-    // Rotation around Z-axis
-    float cosZ = cos(rotation.z);
-    float sinZ = sin(rotation.z);
-    mat3 rotZ = mat3(
-    cosZ, -sinZ, 0.0,
-    sinZ, cosZ, 0.0,
-    0.0, 0.0, 1.0
-    );
+    // Create quaternions for each rotation axis
+    float halfAngleX = rad.x * 0.5;
+    float sX = sin(halfAngleX);
+    float wX = cos(halfAngleX);
+    vec3 xyzX = vec3(1.0, 0.0, 0.0) * sX;
 
-    // Apply rotations
-    direction = rotX * direction;
-    direction = rotY * direction;
-    direction = rotZ * direction;
+    float halfAngleY = rad.y * 0.5;
+    float sY = sin(halfAngleY);
+    float wY = cos(halfAngleY);
+    vec3 xyzY = vec3(0.0, 1.0, 0.0) * sY;
 
-    return direction;
+    float halfAngleZ = rad.z * 0.5;
+    float sZ = sin(halfAngleZ);
+    float wZ = cos(halfAngleZ);
+    vec3 xyzZ = vec3(0.0, 0.0, 1.0) * sZ;
+
+    // Combine the quaternions in the correct order (qz * qy * qx)
+    // First, multiply qy and qx
+    float wYX = wY * wX - dot(xyzY, xyzX);
+    vec3 xyzYX = wY * xyzX + wX * xyzY + cross(xyzY, xyzX);
+
+    // Then multiply the result by qz
+    float w = wZ * wYX - dot(xyzZ, xyzYX);
+    vec3 xyz = wZ * xyzYX + wYX * xyzZ + cross(xyzZ, xyzYX);
+
+    // Rotate the direction vector using the combined quaternion
+    vec3 t = 2.0 * cross(xyz, direction);
+    return direction + w * t + cross(xyz, t);
 }
+
 
 float scale_correction(float d, float s) {
     //                u1s1.d *= min(min(scale.x, scale.y), scale.z);
     //    return d * min(min(s.x, s.y), s.z);
     return d * s;
+}
+
+mat4 mix_mat(mat4 m1, mat4 m2, float k) {
+    return mat4(
+    mix(m1[0], m2[0], k),
+    mix(m1[1], m2[1], k),
+    mix(m1[2], m2[2], k),
+    mix(m1[3], m2[3], k)
+    );
 }
 
 
@@ -191,22 +210,24 @@ float scale_correction(float d, float s) {
 Hit opSmoothUnion(Hit h1, Hit h2, float k) {
     float h = clamp(0.5 + 0.5 * (h2.d - h1.d) / k, 0.0, 1.0);
     float d = mix(h2.d, h1.d, h) - k * h * (1.0 - h);
-    // vec3 color = mix(h2.color, h1.color, h);
-    return Hit(d);
+    mat4 mat = mix_mat(h1.mat, h2.mat, h);
+    return Hit(d, mat);
 }  // working
 
 Hit opSmoothSubtraction(Hit h1, Hit h2, float k) {
     float h = clamp(0.5 - 0.5 * (h2.d + h1.d) / k, 0.0, 1.0);
     float d = mix(h2.d, -h1.d, h) + k * h * (1.0 - h);
     // vec3 color = mix(h2.color, h1.color, h);
-    return Hit(d);
+    mat4 mat = mix_mat(h1.mat, h2.mat, h);
+    return Hit(d, mat);
 } // working
 
 Hit opSmoothIntersection(Hit h1, Hit h2, float k) {
     float h = clamp(0.5 - 0.5 * (h2.d - h1.d) / k, 0.0, 1.0);
     float d = mix(h2.d, h1.d, h) + k * h * (1.0 - h);
     // vec3 color = mix(h2.color, h1.color, h);
-    return Hit(d);
+    mat4 mat = mix_mat(h1.mat, h2.mat, h);
+    return Hit(d, mat);
 }  // working needs to be set before use
 
 Hit opUnion(Hit h1, Hit h2) {
@@ -214,7 +235,7 @@ Hit opUnion(Hit h1, Hit h2) {
 } // working
 
 Hit opSubtraction(Hit h1, Hit h2) {
-    return -h1.d > h2.d ? Hit(-h1.d /* mat */) : h2;
+    return -h1.d > h2.d ? Hit(-h1.d, h1.mat) : h2;
 } // working needs to be set before use
 
 Hit opIntersection(Hit h1, Hit h2) {
@@ -223,8 +244,8 @@ Hit opIntersection(Hit h1, Hit h2) {
 
 Hit opXor(Hit h1, Hit h2) {
     float d = max(min(h1.d, h2.d), -max(h1.d, h2.d));
-    // vec3 color = mix(h1.color, h2.color, 0.5);
-    return Hit(d);
+    mat4 mat = mix_mat(h1.mat, h2.mat, 0.5);
+    return Hit(d, mat);
 }  // working
 
 ////////////
@@ -294,7 +315,9 @@ void main() {
     );
 
     // Usage
-    ray.rd = rotateRayDirection(ray.rd, vec3(s.rot_x, s.rot_y, s.rot_z));
+    float spin = sin(s.time*2.0) * 0.25;
+
+    ray.rd = rotateRayDirection(ray.rd, vec3(s.rot_x, s.rot_y, 0.0));
 
     // path traceing
 

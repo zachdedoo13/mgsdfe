@@ -1,4 +1,5 @@
 #[derive(Copy, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Oss {
    pub freq: f32,
    pub amp: f32,
@@ -6,12 +7,14 @@ pub struct Oss {
 }
 
 #[derive(Copy, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum FloatOrOss {
    Float(f32),
    Oss(Oss),
 }
 
 #[derive(Copy, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Float {
    pub val: FloatOrOss,
    pub id: u64,
@@ -30,6 +33,13 @@ impl Float {
          FloatOrOss::Oss(_) => todo!(),
       }
    }
+
+   pub fn new(val: f32) -> Self {
+      Self {
+         val: FloatOrOss::Float(val),
+         id: 0,
+      }
+   }
 }
 impl Default for Float {
    fn default() -> Self {
@@ -42,6 +52,7 @@ impl Default for Float {
 
 
 #[derive(Copy, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Vec3 {
    pub x: Float,
    pub y: Float,
@@ -54,6 +65,22 @@ impl Vec3 {
 
    pub fn comp(&self) -> String {
       format!("vec3({}, {}, {})", self.x.comp(), self.y.comp(), self.z.comp())
+   }
+
+   pub fn new_from_f32(val: f32) -> Self {
+      Self {
+         x: Float::new(val),
+         y: Float::new(val),
+         z: Float::new(val),
+      }
+   }
+
+   pub fn new(vals: [f32; 3]) -> Self {
+      Self {
+         x: Float::new(vals[0]),
+         y: Float::new(vals[1]),
+         z: Float::new(vals[2]),
+      }
    }
 }
 impl Default for Vec3 {

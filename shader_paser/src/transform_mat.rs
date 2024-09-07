@@ -47,14 +47,28 @@ impl Default for Transform {
    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Material {
-   pub surface_color: Vec3,
+   pub albedo: Vec3,
+   pub emissive: Vec3,
+   pub spec_chance: Float,
+   pub spec_roughness: Float,
+   pub index_of_reflection: Float,
+   pub refraction_chance: Float,
+   pub refraction_roughness: Float,
+   pub refraction_color: Vec3,
 }
 impl Default for Material {
    fn default() -> Self {
       Self {
-         surface_color: Default::default(),
+         albedo: Vec3::new_from_f32(1.0),
+         emissive: Vec3::new_from_f32(0.0),
+         spec_chance: Float::new(0.0),
+         spec_roughness: Float::new(0.0),
+         index_of_reflection: Float::new(1.0),
+         refraction_chance: Float::new(0.0),
+         refraction_roughness: Float::new(0.0),
+         refraction_color: Vec3::new_from_f32(1.0),
       }
    }
 }

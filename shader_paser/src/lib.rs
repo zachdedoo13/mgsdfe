@@ -166,7 +166,7 @@ impl Passer<'_> {
 
       Hit map(vec3 p_in) {{
          // init
-         Hit d0u0 = Hit(100000.0);
+         Hit d0u0 = Hit(100000.0, ZERO_MAT);
          vec3 t = p_in;
 
          // start
@@ -184,10 +184,10 @@ impl Passer<'_> {
             Hit hit = map(p);
             t += hit.d;
 
-            if (hit.d < MHD) break;
+            if (hit.d < MHD) return Hit(t, hit.mat);
             if (t > FP) break;
          }}
-         return Hit(t);
+         return Hit(t, ZERO_MAT);
       }}
 
       "#).as_str()
@@ -222,7 +222,7 @@ impl Passer<'_> {
          {{
             {trans}
 
-            Hit {name} = Hit({sd});
+            Hit {name} = Hit({sd}, ZERO_MAT);
 
             // cleanup
             {scale_cleanup}
@@ -410,13 +410,7 @@ mod tests {
                   },
                   scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                },
-               material: Material {
-                  surface_color: Vec3 {
-                     x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                     z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                  },
-               },
+               material: Material::default(),
                bounds: Bounds { automatic: false },
                sdf: SDF {
                   sdf_type: SdfType::Sphere,
@@ -476,13 +470,7 @@ mod tests {
                         },
                         scale: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
                      },
-                     material: Material {
-                        surface_color: Vec3 {
-                           x: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           y: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                           z: Float { val: FloatOrOss::Float(1.0), id: get_cid() },
-                        },
-                     },
+                     material: Material::default(),
                      bounds: Bounds { automatic: false },
                      sdf: SDF {
                         sdf_type: SdfType::Sphere,

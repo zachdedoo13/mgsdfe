@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
 use shader_paser::{CombinationType, SdfType};
+use shader_paser::datastructures::{Float, FloatOrOss, Vec3};
 
 use crate::graph::{MyGraphState, MyNodeData, MyResponse};
 
@@ -65,6 +66,45 @@ impl NodeTemplateTrait for NodeTypes {
       _user_state: &mut Self::UserState,
       node_id: NodeId,
    ) {
+      let z_to_m = || {
+         FW {
+            data: Float::new(1.0),
+            speed: 0.001,
+            bounds: (0.0, f32::MAX),
+         }
+      };
+      let _inv = || {
+         FW {
+            data: Float::new(1.0),
+            speed: 0.001,
+            bounds: (-f32::MAX, f32::MAX),
+         }
+      };
+
+
+      let v3z_tm = || {
+         V3W {
+            data: Vec3::new_from_f32(1.0),
+            speed: 0.001,
+            bounds: (0.0, f32::MAX),
+         }
+      };
+      let v3inv = || {
+        V3W {
+           data: Vec3::new_from_f32(0.0),
+           speed: 0.001,
+           bounds: (-f32::MAX, f32::MAX),
+        }
+      };
+
+      let trans = || {
+         ValueTypes::Transform {
+            position: v3inv(),
+            rotation: v3inv(),
+            scale: z_to_m(),
+         }
+      };
+
       match self {
          NodeTypes::Main => {
             // main output
@@ -91,7 +131,11 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "union_type".to_string(),
                ConnectionTypes::None,
-               ValueTypes::UnionType { ty: CombinationType::Union, strength: 1.0, order: true },
+               ValueTypes::UnionType {
+                  ty: CombinationType::Union,
+                  strength: z_to_m(),
+                  order: true,
+               },
                InputParamKind::ConstantOnly,
                true,
             );
@@ -100,11 +144,7 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "transform".to_string(),
                ConnectionTypes::Transform,
-               ValueTypes::Transform {
-                  position: [0.0, 0.0, 0.0],
-                  rotation: [0.0, 0.0, 0.0],
-                  scale: 1.0,
-               },
+               trans(),
                InputParamKind::ConnectionOrConstant,
                true,
             );
@@ -134,7 +174,7 @@ impl NodeTemplateTrait for NodeTypes {
                ConnectionTypes::None,
                ValueTypes::SdfData {
                   val: SdfType::Sphere,
-                  data: [1.0, 1.0, 1.0],
+                  data: v3z_tm(),
                },
                InputParamKind::ConstantOnly,
                true,
@@ -144,11 +184,7 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "transform".to_string(),
                ConnectionTypes::Transform,
-               ValueTypes::Transform {
-                  position: [0.0, 0.0, 0.0],
-                  rotation: [0.0, 0.0, 0.0],
-                  scale: 1.0,
-               },
+               trans(),
                InputParamKind::ConnectionOrConstant,
                true,
             );
@@ -159,11 +195,7 @@ impl NodeTemplateTrait for NodeTypes {
                node_id,
                "transform".to_string(),
                ConnectionTypes::Transform,
-               ValueTypes::Transform {
-                  position: [0.0, 0.0, 0.0],
-                  rotation: [0.0, 0.0, 0.0],
-                  scale: 1.0,
-               },
+               trans(),
                InputParamKind::ConstantOnly,
                true,
             );
@@ -219,7 +251,6 @@ impl DataTypeTrait<MyGraphState> for ConnectionTypes {
 }
 
 
-
 /// data held by connections
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
@@ -227,11 +258,13 @@ pub enum ValueTypes {
    Tree,
    Float { val: f32 },
 
-   UnionType { ty: CombinationType, strength: f32, order: bool },
+   UnionType { ty: CombinationType, strength: FW, order: bool },
 
-   Transform { position: [f32; 3], rotation: [f32; 3], scale: f32 },
+   Transform { position: V3W, rotation: V3W, scale: FW },
 
-   SdfData { val: SdfType, data: [f32; 3] },
+   // Material { material: Material },
+
+   SdfData { val: SdfType, data: V3W },
 
    None,
 }
@@ -279,43 +312,30 @@ impl WidgetValueTrait for ValueTypes {
             ui.group(|ui| {
                combination_box(ty, ui);
                ui.horizontal(|ui| {
-                  ui.add(DragValue::new(strength).speed(0.01));
+                  strength.ui(ui);
 
-
-                  if ui.button(if *order {"<-"} else {"->"}).clicked() {
+                  if ui.button(if *order { "<-" } else { "->" }).clicked() {
                      *order = !*order;
                   }
                });
-
             });
-
          }
 
          ValueTypes::Transform { position, rotation, scale } => {
             ui.group(|ui| {
                ui.group(|ui| {
                   ui.label("scale");
-                  ui.horizontal(|ui| {
-                     ui.add(DragValue::new(scale).speed(0.01));
-                  });
+                  scale.ui(ui);
                });
 
                ui.group(|ui| {
                   ui.label("position");
-                  ui.horizontal(|ui| {
-                     ui.add(DragValue::new(&mut position[0]).speed(0.01));
-                     ui.add(DragValue::new(&mut position[1]).speed(0.01));
-                     ui.add(DragValue::new(&mut position[2]).speed(0.01));
-                  });
+                  position.ui(ui);
                });
 
                ui.group(|ui| {
                   ui.label("rotation");
-                  ui.horizontal(|ui| {
-                     ui.add(DragValue::new(&mut rotation[0]).speed(0.01));
-                     ui.add(DragValue::new(&mut rotation[1]).speed(0.01));
-                     ui.add(DragValue::new(&mut rotation[2]).speed(0.01));
-                  });
+                  rotation.ui(ui);
                });
             });
          }
@@ -327,23 +347,91 @@ impl WidgetValueTrait for ValueTypes {
                SdfType::Cube => {
                   ui.group(|ui| {
                      ui.label("Dimensions");
-                     ui.horizontal(|ui| {
-                        ui.add(DragValue::new(&mut data[0]).speed(0.01));
-                        ui.add(DragValue::new(&mut data[1]).speed(0.01));
-                        ui.add(DragValue::new(&mut data[2]).speed(0.01));
-                     });
+                     data.ui(ui);
                   });
                }
 
                _ => {}
             }
          }
+
+         // ValueTypes::Material { .. } => {}
       }
       // This allows you to return your responses from the inline widgets.
       Vec::new()
    }
 }
 
+/// float wrapper class
+#[derive(Debug, Clone, Copy)]
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct FW {
+   pub data: Float,
+   pub speed: f32,
+   pub bounds: (f32, f32),
+}
+impl FW {
+   pub fn ui(&mut self, ui: &mut Ui) {
+      match &mut self.data.val {
+         FloatOrOss::Float(val) => {
+            ui.add(DragValue::new(val)
+                .speed(self.speed)
+                .range(self.bounds.0..=self.bounds.1));
+         }
+         FloatOrOss::Oss(_) => todo!()
+      }
+   }
+}
+impl Default for FW {
+   fn default() -> Self {
+      Self {
+         data: Float::default(),
+         speed: 0.01,
+         bounds: (-f32::MAX, f32::MAX),
+      }
+   }
+}
+
+/// vec3 wrapper class
+#[derive(Debug, Clone, Copy)]
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct V3W {
+   pub data: Vec3,
+   pub speed: f32,
+   pub bounds: (f32, f32),
+}
+impl V3W {
+   pub fn ui(&mut self, ui: &mut Ui) {
+      ui.horizontal(|ui| {
+         if let FloatOrOss::Float(val) = &mut self.data.x.val {
+            ui.add(DragValue::new(val)
+                      .speed(self.speed)
+                      .range(self.bounds.0..=self.bounds.1));
+         }
+
+         if let FloatOrOss::Float(val) = &mut self.data.y.val {
+            ui.add(DragValue::new(val)
+                .speed(self.speed)
+                .range(self.bounds.0..=self.bounds.1));
+         }
+
+         if let FloatOrOss::Float(val) = &mut self.data.z.val {
+            ui.add(DragValue::new(val)
+                .speed(self.speed)
+                .range(self.bounds.0..=self.bounds.1));
+         }
+      });
+   }
+}
+impl Default for V3W {
+   fn default() -> Self {
+      Self {
+         data: Vec3::default(),
+         speed: 0.01,
+         bounds: (-f32::MAX, f32::MAX),
+      }
+   }
+}
 
 
 pub fn combination_box<T: IntoEnumIterator + Debug + PartialEq + Copy>(combination_type: &mut T, ui: &mut Ui) {

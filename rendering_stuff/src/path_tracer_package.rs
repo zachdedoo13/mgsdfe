@@ -134,7 +134,7 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
    let map = &get!(SHADER_GRAPH_DATA).shader_code.code;
 
    let mapped_code: String = if map.is_empty() {
-      GlslPreprocessor::do_the_thing(&no_map, vec![("map".to_string(), "Hit cast_ray(Ray ray) { return Hit(0.0); }".to_string())])
+      GlslPreprocessor::do_the_thing(&no_map, vec![("map".to_string(), "Hit cast_ray(Ray ray) { return Hit(0.0, ZERO_MAT); }".to_string())])
    }
    else {
       GlslPreprocessor::do_the_thing(&no_map, vec![("map".to_string(), map.clone())])

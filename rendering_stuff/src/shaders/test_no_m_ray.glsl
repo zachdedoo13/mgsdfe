@@ -380,6 +380,16 @@ vec4 pathtrace(Ray ray) {
 }
 
 
+mat4 mix_mat(mat4 m1, mat4 m2, float k) {
+    return mat4(
+        mix(m1[0], m2[0], k),
+        mix(m1[1], m2[1], k),
+        mix(m1[2], m2[2], k),
+        mix(m1[3], m2[3], k)
+    );
+}
+
+
 void main() {
     ivec2 gl_uv = ivec2(gl_GlobalInvocationID.xy);
     ivec2 dimentions = imageSize(read_tex);
@@ -406,4 +416,15 @@ void main() {
 
     imageStore(write_tex, gl_uv, trace);
 
+
+
+
+//    mat4 one = mat4(1.0);
+//    mat4 two = mat4(2.0);
+//
+//    vec4 v1 = vec4(1.0);
+//    vec4 v2 = vec4(2.0);
+//
+//    mat4 test = mix_mat(one, two, 1.0);
+//    vec4 test = one[0];
 }

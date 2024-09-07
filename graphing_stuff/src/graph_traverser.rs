@@ -120,7 +120,7 @@ impl<'a> Traverser<'a> {
                      children_order = order;
                      Combination {
                         comb: ty,
-                        strength: Float { val: FloatOrOss::Float(strength), id: 0 },
+                        strength: strength.data,
                      }
                   } else { panic!() }
                };
@@ -149,7 +149,7 @@ impl<'a> Traverser<'a> {
                   if let ValueTypes::SdfData { val, data } = sdf_val {
                      SDF {
                         sdf_type: val,
-                        settings: convert_vec3(data),
+                        settings: data.data,
                      }
                   } else { panic!() }
                };
@@ -176,9 +176,9 @@ impl<'a> Traverser<'a> {
 fn convert_transform(value_types: ValueTypes) -> Transform {
    if let ValueTypes::Transform { position, rotation, scale } = value_types {
       Transform {
-         position: convert_vec3(position),
-         rotation: convert_vec3(rotation),
-         scale: convert_float(scale),
+         position: position.data,
+         rotation: rotation.data,
+         scale: scale.data,
       }
    } else { panic!() }
 }
