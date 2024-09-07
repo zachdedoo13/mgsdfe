@@ -1653,6 +1653,7 @@ dependencies = [
 name = "shader_paser"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "strum",
 ]
 

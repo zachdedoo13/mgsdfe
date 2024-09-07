@@ -831,6 +831,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b73835de1d76ccf0bbdfd1509a8a6d2ae381f2da78b6349c6c39fe0e75641e0c"
 dependencies = [
  "egui",
+ "serde",
  "slotmap",
  "smallvec",
  "thiserror",
@@ -1139,6 +1140,7 @@ dependencies = [
  "common",
  "eframe",
  "egui_node_graph2",
+ "serde",
  "shader_paser",
  "strum",
 ]
@@ -2334,6 +2336,7 @@ dependencies = [
 name = "shader_paser"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "strum",
 ]
 
@@ -2373,6 +2376,7 @@ version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbff4acf519f630b3a3ddcfaea6c06b42174d9a44bc70c620e9ed1649d58b82a"
 dependencies = [
+ "serde",
  "version_check",
 ]
 
@@ -2381,6 +2385,9 @@ name = "smallvec"
 version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "smithay-client-toolkit"

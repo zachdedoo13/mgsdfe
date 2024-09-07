@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use eframe::{App, CreationContext, Frame};
+use eframe::{App, CreationContext, Frame, Storage};
 use egui::{CentralPanel, ComboBox, Context, DragValue, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Visuals};
 use egui::panel::{Side, TopBottomSide};
 use egui_plot::{Line, Plot};
@@ -35,6 +35,10 @@ impl App for MehApp {
       self.ui(ctx);
 
       ctx.request_repaint();
+   }
+
+   fn save(&mut self, storage: &mut dyn Storage) {
+      self.node_graph.save(storage);
    }
 
    fn auto_save_interval(&self) -> Duration {
@@ -486,7 +490,7 @@ fn shader_settings(ctx: &Context, ui: &mut Ui) {
          let w = (aspect_scale as f32) as u32;
 
          ui.label(format!("Height -> {h}  |  Width -> {w}"));
-         ui.label(format!("Total pixels => {}", w * h));
+         ui.label(format!("Total pixels => {:.2} Million", (w * h) as f32 / 1_000_000.0));
 
          rs.width = w;
          rs.height = h;

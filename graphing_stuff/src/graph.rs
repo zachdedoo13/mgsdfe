@@ -1,12 +1,14 @@
-use eframe::egui;
+use eframe::{egui, get_value, set_value, Storage};
 use eframe::egui::{Color32, Response, Ui};
 use egui_node_graph2::{Graph, GraphEditorState, NodeDataTrait, NodeId, NodeResponse, NodeTemplateIter, UserResponseTrait};
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
 use crate::graph_traverser::Traverser;
 use crate::nodes_and_types::*;
 
 /// data held in each node
+#[derive(Serialize, Deserialize)]
 pub struct MyNodeData {
    pub template: NodeTypes,
 }
@@ -60,6 +62,7 @@ impl NodeDataTrait for MyNodeData {
 
 /// internode interactivity
 #[derive(Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum MyResponse {
    SetActiveNode(NodeId),
    ClearActiveNode,
@@ -68,6 +71,7 @@ impl UserResponseTrait for MyResponse {}
 
 /// passed to every node
 #[derive(Default, Eq, PartialOrd, PartialEq)]
+#[derive(Serialize, Deserialize)]
 pub struct MyGraphState {
    pub active_node: Option<NodeId>,
 }
@@ -95,7 +99,10 @@ impl NodeTemplateIter for AllMyNodeTemplates {
 pub type MyGraph = Graph<MyNodeData, ConnectionTypes, ValueTypes>;
 pub type MyEditorState = GraphEditorState<MyNodeData, ConnectionTypes, ValueTypes, NodeTypes, MyGraphState>;
 
-#[derive(Default)]
+
+const PERSISTENCE_KEY: &str = "node_graph";
+
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct NodeGraph {
    state: MyEditorState,
    graph_state: MyGraphState,
@@ -103,13 +110,8 @@ pub struct NodeGraph {
    graph_on: bool,
 }
 impl NodeGraph {
-   pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-      Self {
-         state: MyEditorState::default(),
-         graph_state: MyGraphState::default(),
-
-         graph_on: true,
-      }
+   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+      cc.storage.and_then(|storage| get_value(storage, PERSISTENCE_KEY)).unwrap_or_default()
    }
 
    pub fn update(&mut self, ui: &mut Ui) {
@@ -156,6 +158,20 @@ impl NodeGraph {
          } else {
             self.graph_state.active_node = None;
          }
+      }
+   }
+
+   pub fn save(&mut self, storage: &mut dyn Storage) {
+      set_value(storage, PERSISTENCE_KEY, &self);
+   }
+}
+
+impl Default for NodeGraph {
+   fn default() -> Self {
+      Self {
+         state: Default::default(),
+         graph_state: Default::default(),
+         graph_on: true,
       }
    }
 }

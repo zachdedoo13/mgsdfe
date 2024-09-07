@@ -38,6 +38,7 @@ impl Default for SDF {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum SdfType {
    Sphere,
    Cube,
@@ -85,6 +86,7 @@ impl Combination {
    }
 }
 #[derive(Copy, Clone, Debug, PartialEq, EnumIter)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum CombinationType {
    Union,
    SmoothUnion,

@@ -389,3 +389,20 @@ void main() {
     imageStore(write_tex, gl_uv, trace);
 }
 
+
+
+
+// idea for v2
+/*
+
+Hit shape(pos, mat, norm, do_mat) {
+    float d = sdf(pos);
+    Mat mat;
+    if do_mat {
+        mat = meterial_caclulation(mat, norm); // supports textures
+    }
+    return Hit(d, mat);
+}
+
+*/
+

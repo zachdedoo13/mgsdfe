@@ -112,7 +112,7 @@ impl<'a> Traverser<'a> {
                let transform = convert_transform(trans_val);
 
 
-               let mut children_order;
+               let children_order;
 
                let comb_val = evaluate_connection(node, graph, &self.out_to_in_cash, &self.outputs_cash, "union_type").unwrap();
                let combination = {

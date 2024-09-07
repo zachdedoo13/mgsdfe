@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use eframe::egui;
 use eframe::egui::{Color32, ComboBox, DragValue, Ui};
 use egui_node_graph2::{DataTypeTrait, Graph, InputParamKind, NodeId, NodeTemplateTrait, WidgetValueTrait};
+use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
 use shader_paser::{CombinationType, SdfType};
@@ -11,6 +12,7 @@ use shader_paser::{CombinationType, SdfType};
 use crate::graph::{MyGraphState, MyNodeData, MyResponse};
 
 /// self-explanatory
+#[derive(Serialize, Deserialize)]
 #[derive(Copy, Clone, EnumIter)]
 pub enum NodeTypes {
    /// main types
@@ -183,6 +185,7 @@ impl NodeTemplateTrait for NodeTypes {
 }
 
 /// ways in which a node can connect
+#[derive(Serialize, Deserialize)]
 #[derive(Eq, PartialOrd, PartialEq, Debug)]
 pub enum ConnectionTypes {
    /// used for all compiled stuff
@@ -218,6 +221,7 @@ impl DataTypeTrait<MyGraphState> for ConnectionTypes {
 
 
 /// data held by connections
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
 pub enum ValueTypes {
    Tree,
