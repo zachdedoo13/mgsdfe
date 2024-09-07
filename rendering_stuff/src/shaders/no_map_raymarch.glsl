@@ -233,10 +233,7 @@ vec4 pathtrace(Ray ray) {
     Hit test;
 
     test = cast_ray(ray);
-    back.r = 1.0 / test.d * 0.5;
-
-//    back.b = 0.05 * (sin(s.time) * 0.5 + 0.5);
-//    back.a = 1.0;
+    back.g = 1.0 / test.d * 0.5;
 
     return back;
 }
