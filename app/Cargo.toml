@@ -7,8 +7,12 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "app_bin"
+path = "src/main.rs"
 
-[dependencies] # gloabal
+
+[dependencies]
 egui = "0.28.1"
 eframe = { version = "0.28.1", default-features = false, features = [
     "default_fonts",

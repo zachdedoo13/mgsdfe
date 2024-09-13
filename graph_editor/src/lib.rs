@@ -1,5 +1,4 @@
-
-
+use eframe::Storage;
 
 pub struct GraphEditor {}
 impl GraphEditor {
@@ -8,8 +7,10 @@ impl GraphEditor {
       Self {}
    }
 
-   pub fn ui(&mut self) {
+   pub fn update(&mut self) {}
 
-   }
+   pub fn ui(&mut self) {}
+
+   pub fn save(&mut self, _storage: &mut dyn Storage) {}
 
 }

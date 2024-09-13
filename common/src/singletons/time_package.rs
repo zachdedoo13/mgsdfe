@@ -5,7 +5,6 @@ use crate::init_static;
 init_static!(TIME: TimePackage => { TimePackage::new() });
 
 
-
 /// max for framerate averaging, turn down for performance
 const PAST_FPS_LIMIT: usize = 100;
 

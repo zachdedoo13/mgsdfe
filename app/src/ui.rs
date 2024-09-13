@@ -24,8 +24,9 @@ enum MainContentPage {
    Settings,
 }
 
-/// ui related functions
+/// main ui areas
 impl MgsApp {
+   /// handles sectioning
    pub fn ui(&mut self, ui: &mut Ui) {
       self.top_menubar(ui);
 
@@ -101,7 +102,9 @@ impl MgsApp {
       ui.add_space(SPACE);
    }
 
-   fn path_tracer(&mut self, _ui: &mut Ui) {}
+   fn path_tracer(&mut self, ui: &mut Ui) {
+      self.path_tracer.display(ui);
+   }
 
    fn tracer_settings(&mut self, _ui: &mut Ui) {}
 
@@ -115,30 +118,7 @@ impl MgsApp {
             ScrollArea::vertical()
                 .show(ui, |ui| {
                    for _ in 0..20 {
-                      {
-                         ui.group(|ui| {
-                            let mw = per_width(ui, 0.25);
-                            ui.set_max_width(mw);
-
-                            ui.horizontal(|ui| {
-                               ui.heading("Overall fps");
-                               ui.label(format!("{}", get!(TIME).fps as i32));
-                            });
-
-                            let mut data = get!(TIME).past_fps.clone();
-                            if data.len() > 0 { data.insert(0, [data[0][0] - 1.0, 0.0]); } // makes the zoom include {y: 0}
-
-                            let line = Line::new(data);
-                            Plot::new("my_plot")
-                                .view_aspect(2.0)
-                                .allow_drag(false)
-                                .allow_scroll(false)
-                                .allow_zoom(false)
-                                .allow_boxed_zoom(false)
-                                .show_axes(Vec2b::new(false, true))
-                                .show(ui, |plot_ui| plot_ui.line(line));
-                         });
-                      } // fps
+                      self.fps_graph(ui);
                    }
 
                    // moves scroll bar to the right
@@ -153,8 +133,37 @@ impl MgsApp {
    }
 }
 
+/// sub areas
+impl MgsApp {
+   fn fps_graph(&mut self, ui: &mut Ui) {
+      ui.group(|ui| {
+         let mw = per_width(ui, 0.25);
+         ui.set_max_width(mw);
 
-// miscellaneous //
+         ui.horizontal(|ui| {
+            ui.heading("Overall fps");
+            ui.label(format!("{}", get!(TIME).fps as i32));
+         });
+
+         let mut data = get!(TIME).past_fps.clone();
+         if data.len() > 0 { data.insert(0, [data[0][0] - 1.0, 0.0]); } // makes the zoom include {y: 0}
+
+         let line = Line::new(data);
+         Plot::new("my_plot")
+             .view_aspect(2.0)
+             .allow_drag(false)
+             .allow_scroll(false)
+             .allow_zoom(false)
+             .allow_boxed_zoom(false)
+             .show_axes(Vec2b::new(false, true))
+             .show(ui, |plot_ui| plot_ui.line(line));
+      });
+   }
+}
+
+/////////////////////////////
+// miscellaneous functions //
+/////////////////////////////
 fn per_width(ui: &mut Ui, per: f32) -> f32 {
    ui.ctx().screen_rect().width() * per
 }

@@ -473,6 +473,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "eframe",
  "instant",
  "once_cell",
 ]
@@ -965,6 +966,9 @@ dependencies = [
 [[package]]
 name = "graph_editor"
 version = "0.1.0"
+dependencies = [
+ "eframe",
+]
 
 [[package]]
 name = "hashbrown"

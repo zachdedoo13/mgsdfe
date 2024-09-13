@@ -5,7 +5,8 @@ use eframe::epaint::Rgba;
 use egui::{CentralPanel, Context, Visuals};
 use egui_wgpu::RenderState;
 
-use common::get;
+use common::{get_mut, set_none_static};
+use common::singletons::settings::{SETTINGS, Settings};
 use common::singletons::time_package::TIME;
 use graph_editor::GraphEditor;
 use path_tracer::PathTracer;
@@ -21,9 +22,17 @@ pub struct MgsApp {
 
 /// main functions
 impl MgsApp {
-   pub fn new(_cc: &CreationContext) -> Self {
+   pub fn new(cc: &CreationContext) -> Self {
+      // init none singletons
+      set_none_static!(SETTINGS => { Settings::new(&cc.egui_ctx) });
+
+
+      let render_pack = cc.wgpu_render_state.as_ref().unwrap();
+
+      let path_tracer = PathTracer::new(render_pack);
+
       Self {
-         path_tracer: PathTracer {},
+         path_tracer,
          graph_editor: GraphEditor {},
 
          ui_state: UiState::default(),
@@ -31,9 +40,12 @@ impl MgsApp {
    }
 
    /// global update inter-loop
-   pub fn update(&mut self, _render_state: &RenderState) {
+   pub fn update(&mut self, render_state: &RenderState) {
       // update singletons
-      get!(TIME).update();
+      get_mut!(TIME).update();
+
+      // update modules
+      self.path_tracer.update(render_state)
    }
 }
 
@@ -52,7 +64,9 @@ impl App for MgsApp {
       ctx.request_repaint();
    }
 
-   fn save(&mut self, _storage: &mut dyn Storage) {}
+   fn save(&mut self, storage: &mut dyn Storage) {
+      self.graph_editor.save(storage);
+   }
 
    fn on_exit(&mut self) {}
 
