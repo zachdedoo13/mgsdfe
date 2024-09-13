@@ -16,7 +16,6 @@ use crate::ui::UiState;
 pub struct MgsApp {
    pub path_tracer: PathTracer,
    pub graph_editor: GraphEditor,
-
    pub ui_state: UiState,
 }
 
@@ -26,16 +25,14 @@ impl MgsApp {
       // init none singletons
       set_none_static!(SETTINGS => { Settings::new(&cc.egui_ctx) });
 
-
-      let render_pack = cc.wgpu_render_state.as_ref().unwrap();
-
-      let path_tracer = PathTracer::new(render_pack);
+      // init packages
+      let path_tracer = PathTracer::new(cc.wgpu_render_state.as_ref().unwrap());
+      let ui_state = UiState::default();
 
       Self {
          path_tracer,
          graph_editor: GraphEditor {},
-
-         ui_state: UiState::default(),
+         ui_state,
       }
    }
 

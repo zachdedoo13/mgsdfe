@@ -6,7 +6,7 @@ use common::singletons::time_package::TIME;
 
 use crate::MgsApp;
 
-/// ui related data
+/// ui state related data
 pub struct UiState {
    main_content_page: MainContentPage,
 }

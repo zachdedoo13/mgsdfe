@@ -1,11 +1,7 @@
 use std::sync::Arc;
-
 use wgpu::{Adapter, DeviceDescriptor, Features};
 
-/// Web
-/// Your handle to the web app from JavaScript.
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::wasm_bindgen;
+
 
 /// Native
 #[cfg(not(target_arch = "wasm32"))]
@@ -46,6 +42,10 @@ fn main() -> eframe::Result {
    )
 }
 
+/// Web
+/// Handle to the web app from JavaScript.
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg(target_arch = "wasm32")]
 #[derive(Clone)]
