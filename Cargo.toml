@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "app",
+    "path_tracer",
+    "graph_editor",
+    "common",
+]
+resolver = "2"
+
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+debug = "none"
+panic = "abort"
+codegen-units = 1

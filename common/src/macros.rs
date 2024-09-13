@@ -1,3 +1,5 @@
+
+/// returns a singleton
 #[macro_export]
 macro_rules! get {
     ($var: ident) => {
@@ -5,6 +7,7 @@ macro_rules! get {
     };
 }
 
+/// inits a singleton
 #[macro_export]
 macro_rules! init_static {
     ($name: ident: $ty:ty => $code:block) => {
@@ -12,6 +15,8 @@ macro_rules! init_static {
     };
 }
 
+
+/// is timer
 #[macro_export]
 macro_rules! timer {
     ($code: block) => {{

@@ -7,6 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/shader_paser/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/app/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/common/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/graph_editor/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/path_tracer/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/graphing_stuff/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/rendering_stuff/target" />

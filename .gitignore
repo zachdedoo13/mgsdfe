@@ -1,6 +1,2 @@
-/app/target
-/graphing_stuff/target
+/target/
 /app/pkg/.gitignore
-/rendering_stuff/target
-/shader_paser/target/
-/common/target/

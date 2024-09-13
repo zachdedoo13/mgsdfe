@@ -1,15 +1,7 @@
-#![warn(clippy::all, rust_2018_idioms)]
-#![allow(special_module_name)]
+pub mod app;
+pub use app::MgsApp;
 
-pub use app::MehApp;
+pub mod ui;
 
 #[cfg(target_arch = "wasm32")]
 pub mod main;
-
-pub mod app;
-
-pub mod utility {
-   pub mod macros;
-   pub mod functions;
-   pub mod structs;
-}
