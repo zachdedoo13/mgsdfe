@@ -1,35 +1,38 @@
-use instant::Instant;
+use common::timer;
 
 fn main() {
-   let test1 = {
-      let mut str = String::new();
+   let (one, two) = timer!({
+      let test1 = {
+         let mut str = String::new();
 
-      for i in 0..5_000 {
-         for j in 0..i {
-            str.push_str(j.to_string().as_str());
+         for i in 0..5_000 {
+            for j in 0..i {
+               str.push_str(j.to_string().as_str());
+            }
+            str.push('\n');
          }
-         str.push('\n');
-      }
 
-      str
-   };
+         str
+      };
 
-   let test2 = {
-      let mut str = String::new();
+      let test2 = {
+         let mut str = String::new();
 
-      for i in 0..5_000 {
-         for j in 0..i {
-            str.push_str(j.to_string().as_str());
+         for i in 0..5_000 {
+            for j in 0..i {
+               str.push_str(j.to_string().as_str());
+            }
+            str.push('\n');
          }
-         str.push('\n');
-      }
 
-      str
-   };
+         str
+      };
+
+      (test1, test2)
+   });
 
 
-   let st = Instant::now();
-   println!("Check -> {}", test1 == test2);
-   println!("Time -> {:?}", st.elapsed());
-
+   timer!("Time for check", {
+      println!("Check -> {}", one == two);
+   });
 }
