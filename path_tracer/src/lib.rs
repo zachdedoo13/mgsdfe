@@ -1,23 +1,10 @@
-use egui::Ui;
-use egui_wgpu::RenderState;
+pub mod path_trace_renderer;
+pub mod path_tracer_package;
+pub mod display_texture_pipeline;
 
-pub struct PathTracer {}
-impl PathTracer {
-   pub fn new(_render_state: &RenderState) -> Self {
-      Self {}
-   }
-
-
-   pub fn update(&mut self, render_state: &RenderState) {
-      self.render_pass(render_state);
-   }
-
-
-   pub fn display(&mut self, ui: &mut Ui) {
-      self.handle_input(ui);
-   }
-
-   fn handle_input(&mut self, _ui: &mut Ui) {}
-
-   fn render_pass(&mut self, _render_state: &RenderState) {}
+pub mod utility {
+   pub mod dual_storage_texture_package;
+   pub mod helper_structs;
+   pub mod vertex_library;
+   pub mod vertex_package;
 }

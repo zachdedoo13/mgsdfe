@@ -1568,6 +1568,7 @@ name = "path_tracer"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "eframe",
  "egui",
  "egui-wgpu",
  "once_cell",
