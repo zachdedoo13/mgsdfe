@@ -1,14 +1,43 @@
-use egui::{CentralPanel, FontId, RichText, ScrollArea, SidePanel, TopBottomPanel, Ui, Vec2b};
+use std::fmt::Debug;
+use eframe::{CreationContext, Storage};
+use egui::{CentralPanel, ComboBox, FontId, RichText, ScrollArea, SidePanel, TopBottomPanel, Ui, Vec2b};
 use egui_plot::{Line, Plot};
+use serde_json::{from_str, to_string};
+use strum::IntoEnumIterator;
 
-use common::get;
+use common::{get, get_mut_ref};
+use common::singletons::settings::SETTINGS;
 use common::singletons::time_package::TIME;
 
 use crate::MgsApp;
 
+
+#[derive(Copy, Clone)]
+#[derive(serde::Serialize, serde::Deserialize)]
+enum MainContentPage {
+   NodeEditor,
+   Stats,
+   Settings,
+}
+
+
 /// ui state related data
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
 pub struct UiState {
    main_content_page: MainContentPage,
+}
+impl UiState {
+   pub fn new(cc: &CreationContext) -> Self {
+      let str = cc.storage.unwrap().get_string("ui_state");
+      match str {
+         None => UiState::default(),
+         Some(str) => from_str::<UiState>(str.as_str()).unwrap(),
+      }
+   }
+
+   pub fn save(&self, storage: &mut dyn Storage) {
+      storage.set_string("ui_state", to_string(self).unwrap());
+   }
 }
 impl Default for UiState {
    fn default() -> Self {
@@ -18,11 +47,6 @@ impl Default for UiState {
    }
 }
 
-enum MainContentPage {
-   NodeEditor,
-   Stats,
-   Settings,
-}
 
 /// main ui areas
 impl MgsApp {
@@ -117,9 +141,7 @@ impl MgsApp {
          MainContentPage::Stats => {
             ScrollArea::vertical()
                 .show(ui, |ui| {
-                   for _ in 0..20 {
-                      self.fps_graph(ui);
-                   }
+                   self.stats(ui);
 
                    // moves scroll bar to the right
                    ui.set_min_width(ui.available_size().x)
@@ -127,7 +149,7 @@ impl MgsApp {
          }
 
          MainContentPage::Settings => {
-            ui.label("settings");
+            self.settings_page(ui);
          }
       }
    }
@@ -135,7 +157,8 @@ impl MgsApp {
 
 /// sub areas
 impl MgsApp {
-   fn fps_graph(&mut self, ui: &mut Ui) {
+   fn stats(&mut self, ui: &mut Ui) {
+      // fps graph
       ui.group(|ui| {
          let mw = per_width(ui, 0.25);
          ui.set_max_width(mw);
@@ -159,6 +182,16 @@ impl MgsApp {
              .show(ui, |plot_ui| plot_ui.line(line));
       });
    }
+
+   fn settings_page(&mut self, ui: &mut Ui) {
+      get_mut_ref!(SETTINGS, settings);
+
+      // theme
+      ui.group(|ui| {
+         ui.label("Theme");
+         if enum_combination_box(ui, &mut settings.theme, "") { settings.theme.set_theme(ui.ctx()) };
+      });
+   }
 }
 
 /////////////////////////////
@@ -166,4 +199,22 @@ impl MgsApp {
 /////////////////////////////
 fn per_width(ui: &mut Ui, per: f32) -> f32 {
    ui.ctx().screen_rect().width() * per
+}
+
+/// returns a true if changed
+pub fn enum_combination_box<T, I>(ui: &mut Ui, combination_type: &mut T, label: I) -> bool
+where
+    T: IntoEnumIterator + Debug + PartialEq + Copy,
+    I: Into<String>,
+{
+   let mut changed = false;
+   ComboBox::from_label(label.into().as_str())
+       .selected_text(format!("{combination_type:?}"))
+       .show_ui(ui, |ui| {
+          for variant in T::iter() {
+             if ui.selectable_value(combination_type, variant, format!("{variant:?}")).changed() { changed = true; }
+          }
+       });
+
+   changed
 }

@@ -5,7 +5,7 @@ use eframe::epaint::Rgba;
 use egui::{CentralPanel, Context, Visuals};
 use egui_wgpu::RenderState;
 
-use common::{get_mut, set_none_static};
+use common::{get_mut, set_none_static, timer};
 use common::singletons::settings::{SETTINGS, Settings};
 use common::singletons::time_package::TIME;
 use graph_editor::GraphEditor;
@@ -23,11 +23,11 @@ pub struct MgsApp {
 impl MgsApp {
    pub fn new(cc: &CreationContext) -> Self {
       // init none singletons
-      set_none_static!(SETTINGS => { Settings::new(&cc.egui_ctx) });
+      set_none_static!(SETTINGS => { Settings::new(cc) });
 
       // init packages
       let path_tracer = PathTracer::new(cc.wgpu_render_state.as_ref().unwrap());
-      let ui_state = UiState::default();
+      let ui_state = UiState::new(cc);
 
       Self {
          path_tracer,
@@ -62,13 +62,17 @@ impl App for MgsApp {
    }
 
    fn save(&mut self, storage: &mut dyn Storage) {
-      self.graph_editor.save(storage);
+      timer!("Autosaved in -> ", {
+         self.graph_editor.save(storage);
+         self.ui_state.save(storage);
+         get_mut!(SETTINGS).save(storage);
+      });
    }
 
    fn on_exit(&mut self) {}
 
    fn auto_save_interval(&self) -> Duration {
-      Duration::from_secs(10)
+      Duration::from_secs(5)
    }
 
    fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {

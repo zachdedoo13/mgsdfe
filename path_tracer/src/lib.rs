@@ -14,7 +14,6 @@ impl PathTracer {
 
 
    pub fn display(&mut self, ui: &mut Ui) {
-
       self.handle_input(ui);
    }
 

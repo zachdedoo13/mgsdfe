@@ -2,7 +2,6 @@ use std::sync::Arc;
 use wgpu::{Adapter, DeviceDescriptor, Features};
 
 
-
 /// Native
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
@@ -83,8 +82,8 @@ impl WebHandle {
 
       self.runner
           .start(
-              canvas_id,
-              eframe::WebOptions {
+             canvas_id,
+             eframe::WebOptions {
                 wgpu_options: egui_wgpu::WgpuConfiguration {
                    power_preference: wgpu::PowerPreference::HighPerformance,
                    device_descriptor: device_descriptor_fn,
@@ -93,7 +92,7 @@ impl WebHandle {
                 },
                 ..Default::default()
              },
-              Box::new(|cc| Ok(Box::new(crate::MgsApp::new(cc)))),
+             Box::new(|cc| Ok(Box::new(crate::MgsApp::new(cc)))),
           )
           .await
    }

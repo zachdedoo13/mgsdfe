@@ -9,6 +9,19 @@ macro_rules! get {
     };
 }
 
+/// returns a singleton reference
+/// as a &reference, cannot
+/// be used inline
+///
+/// ``` get_ref!(SETTINGS, settings); let v = settings.time ```
+#[macro_export]
+macro_rules! get_ref {
+    ($var: ident, $name: ident) => {
+        let binding = $var.lock().unwrap();
+        let $name = binding.as_ref().unwrap();
+    };
+}
+
 /// returns a mutable singleton
 /// can be used directly or with
 ///
@@ -17,6 +30,19 @@ macro_rules! get {
 macro_rules! get_mut {
     ($var: ident) => {
         *$var.lock().unwrap().as_mut().expect("Not initulized")
+    };
+}
+
+/// returns a mutable singleton
+/// as a &mut reference, cannot
+/// be used inline
+///
+/// ``` get_mut_ref!(SETTINGS, settings); settings.time = 0.0 ```
+#[macro_export]
+macro_rules! get_mut_ref {
+    ($var: ident, $name: ident) => {
+        let mut binding = $var.lock().unwrap();
+        let $name = binding.as_mut().unwrap();
     };
 }
 
