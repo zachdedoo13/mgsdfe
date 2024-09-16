@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+
 use eframe::{CreationContext, Storage};
 use egui::{CentralPanel, ComboBox, FontId, RichText, ScrollArea, SidePanel, TopBottomPanel, Ui, Vec2b};
 use egui_plot::{Line, Plot};
@@ -10,7 +11,6 @@ use common::singletons::settings::SETTINGS;
 use common::singletons::time_package::TIME;
 
 use crate::MgsApp;
-
 
 #[derive(Copy, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]

@@ -80,9 +80,26 @@ impl PathTracerPackage {
    }
 }
 
+impl PathTracerPackage {
+   pub fn remake_pipeline(&mut self, device: &Device) {
+      let shader_module = load_shader(device, String::new());
+
+      if let Ok(sm) = shader_module {
+         self.compute_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
+            label: Some("path_tracer_pipeline"),
+            layout: Some(&self.pipeline_layout),
+            module: &sm,
+            entry_point: "main",
+            compilation_options: Default::default(),
+         });
+      }
+   }
+}
+
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   let mapped_code = include_str!("shaders/test_raymarch.glsl").to_string(); // todo placeholder
+   // let mapped_code = include_str!("shaders/testing.glsl").to_string(); // todo placeholder
+   let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
 
    let source = mapped_code;
 

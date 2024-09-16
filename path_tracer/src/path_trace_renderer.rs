@@ -11,6 +11,8 @@ use crate::path_tracer_package::PathTracerPackage;
 pub struct PathTracerRenderer {
    path_tracer_package: PathTracerPackage,
    display_texture: DisplayTexture,
+
+   queue_pipeline_remake: bool, // temp
 }
 impl PathTracerRenderer {
 
@@ -23,38 +25,25 @@ impl PathTracerRenderer {
       Self {
          path_tracer_package,
          display_texture,
+         queue_pipeline_remake: false,
       }
    }
 
 
    pub fn update(&mut self, render_state: &RenderState) {
-
       self.render_pass(render_state);
+
+      if self.queue_pipeline_remake {
+         self.path_tracer_package.remake_pipeline(&render_state.device);
+         self.queue_pipeline_remake = false;
+      }
    }
 
 
    pub fn display(&mut self, ui: &mut Ui) {
-      let max = ui.available_size();
+      let _max = ui.available_size();
 
-      // if /*render_settings.maintain_aspect_ratio*/ true {
-      //    let aspect = {
-      //       let w = render_settings.width;
-      //       let h = render_settings.height;
-      //       h as f32 / w as f32
-      //    };
-      //
-      //    ms.height = (ms.width as f32 * aspect) as u32;
-      //
-      //    if ms.height > max.height {
-      //       let diff = ms.height as f32 - max.height as f32;
-      //
-      //       ms.height -= diff as u32;
-      //       ms.width -= diff as u32;
-      //    }
-      // }
-
-
-      let response = ui.add(
+      let _response = ui.add(
          Image::from_texture(
             SizedTexture::new(
                self.display_texture.texture.texture_id,
@@ -65,6 +54,10 @@ impl PathTracerRenderer {
             )
          ).sense(Sense::click_and_drag())
       );
+
+      if ui.button("Remake pipeline").clicked() {
+         self.queue_pipeline_remake = true;
+      }
    }
 
    fn handle_input(&mut self, _response: Response) {}
