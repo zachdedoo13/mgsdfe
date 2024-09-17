@@ -17,3 +17,4 @@ eframe = { version = "0.28.1", default-features = false, features = [
 ] }
 
 common = { path = "../common" }
+log = "0.4.22"

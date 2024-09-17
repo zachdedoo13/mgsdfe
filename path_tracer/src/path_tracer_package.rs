@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::mem::size_of;
 use std::panic::AssertUnwindSafe;
-
+use std::thread;
+use std::time::Duration;
 use bytemuck::bytes_of;
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages};
@@ -9,7 +10,7 @@ use wgpu::naga::{FastHashMap, ShaderStage};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 
 use common::singletons::scene::ParthtracerSettings;
-
+use log::error;
 use crate::utility::dual_storage_texture_package::DualStorageTexturePackage;
 
 pub struct PathTracerPackage {
@@ -25,7 +26,15 @@ impl PathTracerPackage {
 
       let storage_textures = DualStorageTexturePackage::new(device);
 
-      let shader_module = load_shader(device, String::new()).expect("Must start with a valid shader module"); // todo placeholder
+      let sm = load_shader(device, String::new()); // todo placeholder
+      let shader_module = match sm {
+         Ok(s) => s,
+         Err(_) => {
+            error!("Failed");
+            thread::sleep(Duration::from_secs(3));
+            panic!()
+         },
+      };
 
       let uniform = PathTracerUniform::new(device, parthtracer_settings); // todo also placeholder
 
@@ -106,7 +115,8 @@ impl PathTracerPackage {
 
 fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
    // let mapped_code = include_str!("shaders/testing.glsl").to_string(); // todo placeholder
-   let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
+   // let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
+   let mapped_code = include_str!("shaders/testing.glsl").to_string();
 
    let source = mapped_code;
 
@@ -115,26 +125,28 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
       source: ShaderSource::Glsl {
          shader: Cow::Owned(source),
          stage: ShaderStage::Compute,
-         defines: FastHashMap::default(), // Adjust as needed for your shader
+         defines: FastHashMap::default(),
       },
    };
 
-   let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
-      let prev_hook = std::panic::take_hook();
-      std::panic::set_hook(Box::new(|panic_info| {
-         if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
-            eprintln!("Panic occurred");
-         } else {
-            eprintln!("Panic occurred");
-         }
-         eprintln!("Occurred during the shader compilation");
-      }));
-      let result = device.create_shader_module(shader_mod);
+   // let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
+   //    let prev_hook = std::panic::take_hook();
+   //    std::panic::set_hook(Box::new(|panic_info| {
+   //       if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
+   //          eprintln!("Panic occurred");
+   //       } else {
+   //          eprintln!("Panic occurred");
+   //       }
+   //       eprintln!("Occurred during the shader compilation");
+   //    }));
+   //    let result = device.create_shader_module(shader_mod);
+   //
+   //    std::panic::set_hook(prev_hook);
+   //
+   //    result
+   // }));
 
-      std::panic::set_hook(prev_hook);
-
-      result
-   }));
+   let out = Ok(device.create_shader_module(shader_mod));
 
    if let Ok(_) = out {
       println!("Compiled")

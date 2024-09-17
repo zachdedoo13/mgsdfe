@@ -21,13 +21,16 @@ impl Default for Scene {
    }
 }
 
+
+///////////////////
+// Shape storage //
+///////////////////
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ShapeEntry {
    pub name: String,
    pub shader_code: String,
 }
 impl ShapeEntry {
-
    /// pre-made shapes, called inside a switch case, has the inputs (vec3 p) and (vec3 data)
    /// and (bool do_mat) and (Mat in_mat)
    pub fn hardcoded() -> Vec<ShapeEntry> {
@@ -44,6 +47,9 @@ impl ShapeEntry {
 }
 
 
+/////////////////////////
+// Pathtracer settings //
+/////////////////////////
 #[repr(C)]
 #[derive(Pod, Copy, Clone, Zeroable)]
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -99,7 +105,5 @@ impl ParthtracerSettings {
             ui.add(DragValue::new(&mut self.camera_pos[2]).range(-100.0..=100.0).speed(0.01).prefix("Camera Pos Z"));
          });
       });
-
-
    }
 }

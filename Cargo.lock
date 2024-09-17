@@ -1573,6 +1573,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui-wgpu",
+ "log",
  "once_cell",
  "wgpu",
 ]

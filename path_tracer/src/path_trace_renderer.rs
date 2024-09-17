@@ -4,7 +4,7 @@ use eframe::emath::Vec2;
 use egui::{Image, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
-use wgpu::CommandEncoderDescriptor;
+use wgpu::{CommandEncoderDescriptor, Extent3d};
 use common::{get, get_mut_ref};
 use common::singletons::settings::SETTINGS;
 use common::singletons::time_package::TIME;
@@ -19,7 +19,7 @@ pub struct PathTracerRenderer {
 }
 impl PathTracerRenderer {
    pub fn new(cc: &CreationContext) -> Self {
-      let render_state = cc.wgpu_render_state.as_ref().unwrap();
+      let render_state = cc.wgpu_render_state.as_ref().expect("Couldn't unwrap render state");
 
       get_mut_ref!(SETTINGS, settings); let settings = &mut settings.current_scene.parthtrace_settings;
       // settings.last_clear_frame = settings.frame; // reset to avid shizz
@@ -38,6 +38,8 @@ impl PathTracerRenderer {
    pub fn update(&mut self, render_state: &RenderState) {
       self.render_pass(render_state);
 
+      self.display_texture.update(render_state);
+
       if self.queue_pipeline_remake {
          self.path_tracer_package.remake_pipeline(&render_state.device);
          self.queue_pipeline_remake = false;
@@ -50,30 +52,61 @@ impl PathTracerRenderer {
       path_set.frame += 1;
 
       self.path_tracer_package.uniform.update_with_data(&render_state.queue, *&path_set);
+
+      let iss = settings.image_size_settings;
+      self.path_tracer_package.storage_textures.size.width = iss.width;
+      self.path_tracer_package.storage_textures.size.height = iss.height;
+      self.path_tracer_package.storage_textures.update(&render_state.device);
    }
 
 
    pub fn display(&mut self, ui: &mut Ui) {
-      let _max = ui.available_size();
+      let max = to_extent(ui.available_size());
+      let mut ms = max;
 
-      let _response = ui.add(
-         Image::from_texture(
-            SizedTexture::new(
-               self.display_texture.texture.texture_id,
-               Vec2::new(
-                  self.display_texture.texture.texture.size().width as f32,
-                  self.display_texture.texture.texture.size().height as f32,
-               ),
-            )
-         ).sense(Sense::click_and_drag())
-      );
+      get_mut_ref!(SETTINGS, settings);
+      let iss = settings.image_size_settings;
 
-      if ui.button("Remake pipeline").clicked() {
-         self.queue_pipeline_remake = true;
+      if iss.maintain_aspect_ratio {
+         let aspect = {
+            let w = iss.width;
+            let h = iss.height;
+            h as f32 / w as f32
+         };
+
+         ms.height = (ms.width as f32 * aspect) as u32;
+
+         if ms.height > max.height {
+            let diff = ms.height as f32 - max.height as f32;
+
+            ms.height -= diff as u32;
+            ms.width -= diff as u32;
+         }
       }
+
+      self.display_texture.texture.size = ms;
+
+      ui.horizontal(|ui| {
+         if ui.button("🔄").clicked() {
+            self.queue_pipeline_remake = true;
+         }
+
+         let response = ui.add(
+            Image::from_texture(
+               SizedTexture::new(
+                  self.display_texture.texture.texture_id,
+                  Vec2::new(
+                     self.display_texture.texture.texture.size().width as f32,
+                     self.display_texture.texture.texture.size().height as f32,
+                  ),
+               )
+            ).sense(Sense::click_and_drag())
+         );
+
+         self.handle_input(response);
+      });
    }
 
-   #[allow(dead_code)]
    fn handle_input(&mut self, _response: Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
@@ -87,5 +120,13 @@ impl PathTracerRenderer {
       }
 
       render_state.queue.submit(iter::once(encoder.finish()));
+   }
+}
+
+pub fn to_extent(vec2: Vec2) -> Extent3d {
+   Extent3d {
+      width: vec2.x as u32,
+      height: vec2.y as u32,
+      depth_or_array_layers: 1,
    }
 }

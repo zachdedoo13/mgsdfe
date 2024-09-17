@@ -14,8 +14,11 @@ pub struct Settings {
 
    pub saved_scenes: Vec<Scene>,
    pub current_scene: Scene,
+
+   pub image_size_settings: ImageSizeSettings,
 }
 impl Settings {
+   /// init loading from context
    pub fn new(cc: &CreationContext) -> Self {
       // load self from persistent storage
       let per = cc.storage.unwrap().get_string("settings");
@@ -40,6 +43,7 @@ impl Default for Settings {
          theme: Theme::Dark,
          saved_scenes: vec![],
          current_scene: Scene::default(),
+         image_size_settings: ImageSizeSettings::default(),
       }
    }
 }
@@ -68,5 +72,31 @@ impl Theme {
          Theme::Macchiato => catppuccin_egui::set_theme(ctx, MACCHIATO),
          Theme::Mocha => catppuccin_egui::set_theme(ctx, MOCHA),
       };
+   }
+}
+
+
+/////////////////////////
+// Image size settings //
+/////////////////////////
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
+pub struct ImageSizeSettings {
+   pub maintain_aspect_ratio: bool,
+   pub selected_aspect: (i32, i32),
+   pub aspect_scale: i32,
+
+   pub width: u32,
+   pub height: u32,
+}
+impl Default for ImageSizeSettings {
+   fn default() -> Self {
+      Self {
+         maintain_aspect_ratio: true,
+         selected_aspect: (16, 9),
+         aspect_scale: 1920,
+
+         width: 1920,
+         height: 1080,
+      }
    }
 }

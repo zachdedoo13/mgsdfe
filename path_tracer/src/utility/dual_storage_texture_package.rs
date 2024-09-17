@@ -25,6 +25,12 @@ impl DualStorageTexturePackage {
       }
    }
 
+   pub fn update(&mut self, device: &Device) {
+      let check = (self.size.width, self.size.height);
+      self.textures.one.update(device, check);
+      self.textures.two.update(device, check);
+   }
+
    pub fn read_layout(&self) -> &BindGroupLayout {
       &self.textures.item_one().read_bind_group_layout
    }

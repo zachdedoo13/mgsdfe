@@ -3,9 +3,9 @@ use egui_wgpu::RenderState;
 use wgpu::{Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
 pub struct Flipper<T> {
-   one: T,
-   two: T,
-   active: bool,
+   pub one: T,
+   pub two: T,
+   pub active: bool,
 }
 
 impl<T> Flipper<T> {

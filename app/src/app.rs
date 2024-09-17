@@ -50,7 +50,7 @@ impl MgsApp {
 /// eframe shizz
 impl App for MgsApp {
    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-      self.update(frame.wgpu_render_state().unwrap());
+      self.update(frame.wgpu_render_state().expect("Failed to unwrap render state"));
 
       // overload panel
       CentralPanel::default()
