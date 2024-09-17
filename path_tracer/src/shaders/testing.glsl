@@ -366,5 +366,7 @@ void main() {
 
     vec4 trace = pathtrace(ray);
 
-    imageStore(write_tex, gl_uv, trace);
+    vec4 col = vec4(vec3(uv, 0.0) * sin(s.time), 1.0);
+
+    imageStore(write_tex, gl_uv, col);
 }

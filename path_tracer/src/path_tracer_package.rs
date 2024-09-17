@@ -2,11 +2,13 @@ use std::borrow::Cow;
 use std::mem::size_of;
 use std::panic::AssertUnwindSafe;
 
-use bytemuck::{bytes_of, Pod, Zeroable};
+use bytemuck::bytes_of;
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages};
 use wgpu::naga::{FastHashMap, ShaderStage};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
+
+use common::singletons::scene::ParthtracerSettings;
 
 use crate::utility::dual_storage_texture_package::DualStorageTexturePackage;
 
@@ -16,15 +18,16 @@ pub struct PathTracerPackage {
    pub storage_textures: DualStorageTexturePackage,
    pub uniform: PathTracerUniform,
 }
+
 impl PathTracerPackage {
-   pub fn new(render_state: &RenderState) -> Self {
+   pub fn new(render_state: &RenderState, parthtracer_settings: &ParthtracerSettings) -> Self {
       let device = &render_state.device;
 
       let storage_textures = DualStorageTexturePackage::new(device);
 
       let shader_module = load_shader(device, String::new()).expect("Must start with a valid shader module"); // todo placeholder
 
-      let uniform = PathTracerUniform::new(device, PathTracerSettings::default()); // todo also placeholder
+      let uniform = PathTracerUniform::new(device, parthtracer_settings); // todo also placeholder
 
       let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("PathTracerPackage pipeline_layout"),
@@ -50,6 +53,10 @@ impl PathTracerPackage {
          storage_textures,
          uniform,
       }
+   }
+
+   pub fn update(&mut self, render_state: &RenderState, settings: ParthtracerSettings) {
+      self.uniform.update_with_data(&render_state.queue, &settings);
    }
 
    pub fn render_pass(&mut self, encoder: &mut CommandEncoder) {
@@ -137,53 +144,17 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
 }
 
 
-#[repr(C)]
-#[derive(Pod, Copy, Clone, Zeroable)]
-pub struct PathTracerSettings {
-   pub time: f32,
-   pub frame: i32,
-
-   pub last_clear_frame: i32,
-   pub samples_per_frame: i32,
-   pub steps_per_ray: i32,
-
-   pub bounces: i32,
-   pub fov: f32,
-
-   pub cam_pos: [f32; 3],
-   pub cam_dir: [f32; 3],
-}
-impl Default for PathTracerSettings {
-   fn default() -> Self {
-      Self {
-         time: 0.0,
-         frame: 0,
-
-         last_clear_frame: 0,
-         samples_per_frame: 1,
-         steps_per_ray: 60,
-
-         bounces: 8,
-         fov: 90.0,
-
-         cam_pos: [0.0, 0.0, 0.0],
-         cam_dir: [1.0, 2.0, 3.0],
-      }
-   }
-}
-
-
 pub struct PathTracerUniform {
    bind_group: BindGroup,
    layout: BindGroupLayout,
    buffer: Buffer,
-   data: PathTracerSettings,
 }
+
 impl PathTracerUniform {
-   pub fn new(device: &Device, data: PathTracerSettings) -> Self {
+   pub fn new(device: &Device, data: &ParthtracerSettings) -> Self {
       let buffer = device.create_buffer_init(&BufferInitDescriptor {
          label: Some("PathTracerUniform"),
-         contents: bytes_of(&data),
+         contents: bytes_of(data),
          usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
       });
 
@@ -196,7 +167,7 @@ impl PathTracerUniform {
                ty: wgpu::BindingType::Buffer {
                   ty: wgpu::BufferBindingType::Uniform,
                   has_dynamic_offset: false,
-                  min_binding_size: wgpu::BufferSize::new(size_of::<PathTracerSettings>() as u64),
+                  min_binding_size: wgpu::BufferSize::new(size_of::<ParthtracerSettings>() as u64),
                },
                count: None,
             },
@@ -216,15 +187,14 @@ impl PathTracerUniform {
          buffer,
          bind_group,
          layout,
-         data,
       }
    }
 
-   pub fn update_with_data(&self, queue: &Queue) {
+   pub fn update_with_data(&self, queue: &Queue, data: &ParthtracerSettings) {
       queue.write_buffer(
          &self.buffer,
          0,
-         bytes_of(&self.data),
+         bytes_of(data),
       );
    }
 }

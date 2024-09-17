@@ -1,5 +1,6 @@
 use egui_wgpu::RenderState;
-use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, Device, IndexFormat, PipelineLayoutDescriptor, RenderPipeline, TextureFormat, TextureView};
+use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
+
 use crate::utility::helper_structs::{EguiTexturePackage, f32_to_extent};
 use crate::utility::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
 use crate::utility::vertex_package::{Vertex, VertexPackage};

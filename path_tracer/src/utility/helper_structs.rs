@@ -1,12 +1,13 @@
 use eframe::epaint::TextureId;
-use egui_wgpu::{Renderer, RenderState};
-use wgpu::{Device, Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
+use egui_wgpu::RenderState;
+use wgpu::{Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
 pub struct Flipper<T> {
    one: T,
    two: T,
    active: bool,
 }
+
 impl<T> Flipper<T> {
    pub fn new(one: T, two: T) -> Self {
       Self { one, two, active: false }
@@ -40,6 +41,7 @@ pub struct EguiTexturePackage {
    pub texture_id: TextureId,
    pub size: Extent3d,
 }
+
 impl EguiTexturePackage {
    pub fn new(in_size: Extent3d, render_state: &RenderState) -> Self {
       let device = &render_state.device;

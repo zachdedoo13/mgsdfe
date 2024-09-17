@@ -5,6 +5,9 @@ use egui::{Image, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
 use wgpu::CommandEncoderDescriptor;
+use common::{get, get_mut_ref};
+use common::singletons::settings::SETTINGS;
+use common::singletons::time_package::TIME;
 use crate::display_texture_pipeline::DisplayTexture;
 use crate::path_tracer_package::PathTracerPackage;
 
@@ -15,11 +18,13 @@ pub struct PathTracerRenderer {
    queue_pipeline_remake: bool, // temp
 }
 impl PathTracerRenderer {
-
    pub fn new(cc: &CreationContext) -> Self {
       let render_state = cc.wgpu_render_state.as_ref().unwrap();
 
-      let path_tracer_package = PathTracerPackage::new(render_state);
+      get_mut_ref!(SETTINGS, settings); let settings = &mut settings.current_scene.parthtrace_settings;
+      // settings.last_clear_frame = settings.frame; // reset to avid shizz
+
+      let path_tracer_package = PathTracerPackage::new(render_state, *&settings);
       let display_texture = DisplayTexture::new(render_state, path_tracer_package.storage_textures.read_layout());
 
       Self {
@@ -37,6 +42,14 @@ impl PathTracerRenderer {
          self.path_tracer_package.remake_pipeline(&render_state.device);
          self.queue_pipeline_remake = false;
       }
+
+      // update scene
+      get_mut_ref!(SETTINGS, settings);
+      let path_set = &mut settings.current_scene.parthtrace_settings;
+      path_set.time = get!(TIME).start_time.elapsed().as_secs_f32();
+      path_set.frame += 1;
+
+      self.path_tracer_package.uniform.update_with_data(&render_state.queue, *&path_set);
    }
 
 
@@ -60,6 +73,7 @@ impl PathTracerRenderer {
       }
    }
 
+   #[allow(dead_code)]
    fn handle_input(&mut self, _response: Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {

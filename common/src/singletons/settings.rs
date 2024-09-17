@@ -3,6 +3,7 @@ use eframe::egui::{Context, Visuals};
 use eframe::{CreationContext, Storage};
 use serde_json::{from_str, to_string};
 use crate::init_none_static;
+use crate::singletons::scene::Scene;
 
 init_none_static!(SETTINGS: Settings);
 
@@ -10,6 +11,9 @@ init_none_static!(SETTINGS: Settings);
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Settings {
    pub theme: Theme,
+
+   pub saved_scenes: Vec<Scene>,
+   pub current_scene: Scene,
 }
 impl Settings {
    pub fn new(cc: &CreationContext) -> Self {
@@ -18,7 +22,7 @@ impl Settings {
       match per {
          None => Settings::default(),
          Some(str) => {
-            let set: Settings = from_str(str.as_str()).unwrap();
+            let set: Settings = from_str(str.as_str()).unwrap_or_default();
             set.theme.set_theme(&cc.egui_ctx);
             set
          }
@@ -34,6 +38,8 @@ impl Default for Settings {
    fn default() -> Self {
       Self {
          theme: Theme::Dark,
+         saved_scenes: vec![],
+         current_scene: Scene::default(),
       }
    }
 }

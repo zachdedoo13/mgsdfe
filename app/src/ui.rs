@@ -6,7 +6,7 @@ use egui_plot::{Line, Plot};
 use serde_json::{from_str, to_string};
 use strum::IntoEnumIterator;
 
-use common::{get, get_mut_ref};
+use common::{get, get_mut, get_mut_ref};
 use common::singletons::settings::SETTINGS;
 use common::singletons::time_package::TIME;
 
@@ -72,8 +72,10 @@ impl MgsApp {
           .max_width(per_width(ui, 0.70))
           .show_inside(ui, |ui| {
              TopBottomPanel::top("tracer settings")
+                 .resizable(true)
                  .show_inside(ui, |ui| {
                     self.path_tracer(ui);
+                    ui.allocate_space(ui.available_size());
                  });
 
              CentralPanel::default()
@@ -130,7 +132,9 @@ impl MgsApp {
       self.path_tracer.display(ui);
    }
 
-   fn tracer_settings(&mut self, _ui: &mut Ui) {}
+   fn tracer_settings(&mut self, ui: &mut Ui) {
+      get_mut!(SETTINGS).current_scene.parthtrace_settings.ui(ui);
+   }
 
    fn main_content(&mut self, ui: &mut Ui) {
       match self.ui_state.main_content_page {

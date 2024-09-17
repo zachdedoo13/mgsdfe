@@ -476,6 +476,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "catppuccin-egui",
  "eframe",
  "instant",
@@ -1568,6 +1569,7 @@ name = "path_tracer"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "common",
  "eframe",
  "egui",
  "egui-wgpu",
