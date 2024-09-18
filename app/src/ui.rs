@@ -137,7 +137,7 @@ impl MgsApp {
       ScrollArea::vertical().show(ui, |ui| {
          get_mut!(SETTINGS).current_scene.parthtrace_settings.ui(ui);
 
-         self.image_size_settings(ui);
+         self.image_render_settings(ui);
       });
    }
 
@@ -202,7 +202,7 @@ impl MgsApp {
       });
    }
 
-   fn image_size_settings(&mut self, ui: &mut Ui) {
+   fn image_render_settings(&mut self, ui: &mut Ui) {
       get_mut_ref!(SETTINGS, settings);
       let iss = &mut settings.image_size_settings;
 

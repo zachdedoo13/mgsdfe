@@ -28,11 +28,31 @@ fn fs_main(
 ) -> @location(0) vec4<f32> {
     var uv = in.uv * 0.5 + 0.5;
 
+
+    let color: vec3<f32> = bilinear(uv);
+
+
+    return vec4(color,  1.0);
+}
+
+fn nns(uv: vec2<f32>) -> vec3<f32> {
     let dimensions = textureDimensions(read_texture);
 
     let uv_nearest = vec2<i32>(floor(uv * vec2<f32>(dimensions.xy)));
 
     var color = textureLoad(read_texture, uv_nearest).rgb;
 
-    return vec4(color,  1.0);
+    return color;
+}
+
+fn bilinear(uv: vec2<f32>) -> vec3<f32> {
+    let dimensions = textureDimensions(read_texture);
+    let uv_nearest = vec2<i32>(floor(uv * vec2<f32>(dimensions.xy)));
+
+    let one = textureLoad(read_texture, uv_nearest + vec2(-1, -1)).rgb;
+    let two = textureLoad(read_texture, uv_nearest + vec2(1, -1)).rgb;
+    let three = textureLoad(read_texture, uv_nearest + vec2(-1, 1)).rgb;
+    let four = textureLoad(read_texture, uv_nearest + vec2(1, 1)).rgb;
+
+    return (one + two + three + four) / 4.0;
 }

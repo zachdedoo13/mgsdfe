@@ -1,23 +1,21 @@
 use std::borrow::Cow;
-use std::mem::size_of;
 use std::panic::AssertUnwindSafe;
 use std::thread;
-use std::time::Duration;
-use bytemuck::bytes_of;
+
 use egui_wgpu::RenderState;
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, Buffer, BufferUsages, CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, Queue, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages};
+use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu::naga::{FastHashMap, ShaderStage};
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
 
 use common::singletons::scene::ParthtracerSettings;
-use log::error;
+
 use crate::utility::dual_storage_texture_package::DualStorageTexturePackage;
+use crate::utility::helper_structs::UniformFactory;
 
 pub struct PathTracerPackage {
    pub pipeline_layout: PipelineLayout,
    pub compute_pipeline: ComputePipeline,
    pub storage_textures: DualStorageTexturePackage,
-   pub uniform: PathTracerUniform,
+   pub uniform: UniformFactory<ParthtracerSettings>,
 }
 
 impl PathTracerPackage {
@@ -26,17 +24,9 @@ impl PathTracerPackage {
 
       let storage_textures = DualStorageTexturePackage::new(device);
 
-      let sm = load_shader(device, String::new()); // todo placeholder
-      let shader_module = match sm {
-         Ok(s) => s,
-         Err(_) => {
-            error!("Failed");
-            thread::sleep(Duration::from_secs(3));
-            panic!()
-         },
-      };
+      let shader_module = load_shader(device, String::new()).expect("Failed to load shader"); // todo placeholder
 
-      let uniform = PathTracerUniform::new(device, parthtracer_settings); // todo also placeholder
+      let uniform = UniformFactory::new(device, parthtracer_settings); // todo also placeholder
 
       let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("PathTracerPackage pipeline_layout"),
@@ -113,8 +103,9 @@ impl PathTracerPackage {
 }
 
 
-fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModule> {
-   // let mapped_code = include_str!("shaders/testing.glsl").to_string(); // todo placeholder
+fn load_shader(device: &Device, _map: String) -> thread::Result<ShaderModule> {
+   // todo placeholder
+   // let mapped_code = include_str!("shaders/testing.glsl").to_string();
    // let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
    let mapped_code = include_str!("shaders/testing.glsl").to_string();
 
@@ -129,24 +120,24 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
       },
    };
 
-   // let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
-   //    let prev_hook = std::panic::take_hook();
-   //    std::panic::set_hook(Box::new(|panic_info| {
-   //       if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
-   //          eprintln!("Panic occurred");
-   //       } else {
-   //          eprintln!("Panic occurred");
-   //       }
-   //       eprintln!("Occurred during the shader compilation");
-   //    }));
-   //    let result = device.create_shader_module(shader_mod);
-   //
-   //    std::panic::set_hook(prev_hook);
-   //
-   //    result
-   // }));
+   let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
+      let prev_hook = std::panic::take_hook();
+      std::panic::set_hook(Box::new(|panic_info| {
+         if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
+            eprintln!("Panic occurred");
+         } else {
+            eprintln!("Panic occurred");
+         }
+         eprintln!("Occurred during the shader compilation");
+      }));
+      let result = device.create_shader_module(shader_mod);
 
-   let out = Ok(device.create_shader_module(shader_mod));
+      std::panic::set_hook(prev_hook);
+
+      result
+   }));
+
+   // let out = Ok(device.create_shader_module(shader_mod));
 
    if let Ok(_) = out {
       println!("Compiled")
@@ -155,58 +146,3 @@ fn load_shader(device: &Device, _map: String) -> std::thread::Result<ShaderModul
    out
 }
 
-
-pub struct PathTracerUniform {
-   bind_group: BindGroup,
-   layout: BindGroupLayout,
-   buffer: Buffer,
-}
-
-impl PathTracerUniform {
-   pub fn new(device: &Device, data: &ParthtracerSettings) -> Self {
-      let buffer = device.create_buffer_init(&BufferInitDescriptor {
-         label: Some("PathTracerUniform"),
-         contents: bytes_of(data),
-         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-      });
-
-      let layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-         label: Some("UniformPackageSingles"),
-         entries: &[
-            wgpu::BindGroupLayoutEntry {
-               binding: 0,
-               visibility: ShaderStages::COMPUTE,
-               ty: wgpu::BindingType::Buffer {
-                  ty: wgpu::BufferBindingType::Uniform,
-                  has_dynamic_offset: false,
-                  min_binding_size: wgpu::BufferSize::new(size_of::<ParthtracerSettings>() as u64),
-               },
-               count: None,
-            },
-         ],
-      });
-
-      let bind_group = device.create_bind_group(&BindGroupDescriptor {
-         label: None,
-         layout: &layout,
-         entries: &[BindGroupEntry {
-            binding: 0,
-            resource: buffer.as_entire_binding(),
-         }],
-      });
-
-      Self {
-         buffer,
-         bind_group,
-         layout,
-      }
-   }
-
-   pub fn update_with_data(&self, queue: &Queue, data: &ParthtracerSettings) {
-      queue.write_buffer(
-         &self.buffer,
-         0,
-         bytes_of(data),
-      );
-   }
-}

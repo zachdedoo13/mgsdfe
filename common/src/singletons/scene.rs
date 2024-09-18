@@ -92,7 +92,7 @@ impl ParthtracerSettings {
          ui.add_space(15.0);
 
          ui.add(DragValue::new(&mut self.samples_per_frame).range(1..=16).speed(0.01).prefix("Samples per frame"));
-         ui.add(DragValue::new(&mut self.steps_per_ray).range(1..=320).speed(0.01).prefix("Steps per ray"));
+         ui.add(DragValue::new(&mut self.steps_per_ray).range(1..=320).speed(0.1).prefix("Steps per ray"));
          ui.add(DragValue::new(&mut self.bounces).range(0..=32).speed(0.1).prefix("Bounces"));
 
          ui.add_space(15.0);
