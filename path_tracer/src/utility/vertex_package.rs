@@ -53,9 +53,9 @@ impl VertexPackage {
 
       Self {
          vertex_buffer,
+         index_buffer,
          num_indices,
          num_vertices,
-         index_buffer,
       }
    }
 }

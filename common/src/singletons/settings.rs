@@ -7,7 +7,7 @@ use crate::singletons::scene::Scene;
 
 init_none_static!(SETTINGS: Settings);
 
-/// global settings for the app, init in app::new and saved in app::save
+/// global settings for the app, init in ``App::new()`` and saved in ``App::save()``
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Settings {
    pub theme: Theme,
@@ -16,9 +16,12 @@ pub struct Settings {
    pub current_scene: Scene,
 
    pub image_size_settings: ImageSizeSettings,
+
+   pub graph_settings: GraphSettings,
 }
 impl Settings {
    /// init loading from context
+   /// # Panics
    pub fn new(cc: &CreationContext) -> Self {
       // load self from persistent storage
       let per = cc.storage.unwrap().get_string("settings");
@@ -32,8 +35,9 @@ impl Settings {
       }
    }
 
+   /// # Panics
    pub fn save(&self, storage: &mut dyn Storage) {
-      storage.set_string("settings", to_string(self).unwrap())
+      storage.set_string("settings", to_string(self).unwrap());
    }
 }
 
@@ -44,6 +48,7 @@ impl Default for Settings {
          saved_scenes: vec![],
          current_scene: Scene::default(),
          image_size_settings: ImageSizeSettings::default(),
+         graph_settings: GraphSettings::default(),
       }
    }
 }
@@ -99,4 +104,31 @@ impl Default for ImageSizeSettings {
          height: 1080,
       }
    }
+}
+
+
+////////////////////
+// Graph settings //
+////////////////////
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
+pub struct GraphSettings {
+   pub fps_graph_settings: FpsGraphSettings,
+}
+
+impl Default for GraphSettings {
+   fn default() -> Self {
+      Self {
+         fps_graph_settings: FpsGraphSettings {
+            include_upper: 200.0,
+            update_rate: 0.25,
+            amount: 100,
+         }
+      }
+   }
+}
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
+pub struct FpsGraphSettings {
+   pub include_upper: f32,
+   pub update_rate: f64,
+   pub amount: usize,
 }

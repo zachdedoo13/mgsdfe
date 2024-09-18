@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use wgpu::{Adapter, DeviceDescriptor, Features};
+use wgpu::{Adapter, DeviceDescriptor, Features, Limits};
 
 
 /// Native
@@ -16,7 +16,7 @@ fn main() -> eframe::Result {
       DeviceDescriptor {
          label: Some("wgpu native device desc"),
          required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-         required_limits: Default::default(),
+         required_limits: Limits::default(),
       }
    });
 

@@ -26,7 +26,9 @@ enum MainContentPage {
 pub struct UiState {
    main_content_page: MainContentPage,
 }
+
 impl UiState {
+   /// # Panics
    pub fn new(cc: &CreationContext) -> Self {
       let str = cc.storage.unwrap().get_string("ui_state");
       match str {
@@ -35,10 +37,12 @@ impl UiState {
       }
    }
 
+   /// # Panics
    pub fn save(&self, storage: &mut dyn Storage) {
       storage.set_string("ui_state", to_string(self).unwrap());
    }
 }
+
 impl Default for UiState {
    fn default() -> Self {
       Self {
@@ -167,18 +171,34 @@ impl MgsApp {
 /// sub areas
 impl MgsApp {
    fn stats(&mut self, ui: &mut Ui) {
+      get_mut_ref!(SETTINGS, settings);
+      let graph_set = &mut settings.graph_settings;
+      let fps_graph_set = &mut graph_set.fps_graph_settings;
+
       // fps graph
       ui.group(|ui| {
          let mw = per_width(ui, 0.25);
          ui.set_max_width(mw);
 
          ui.horizontal(|ui| {
-            ui.heading("Overall fps");
+            ui.heading("Application Fps");
             ui.label(format!("{}", get!(TIME).fps as i32));
+
+            ui.menu_button("...", |ui| {
+               if ui.button("Clear").clicked() { get_mut!(TIME).past_fps.clear() };
+
+               if ui.add(Slider::new(&mut fps_graph_set.update_rate, 0.0..=0.99).text("Fps update rate")).changed() {
+                  get_mut!(TIME).fps_update_interval = fps_graph_set.update_rate.sqrt();
+               }
+
+               if ui.add(Slider::new(&mut fps_graph_set.amount, 10..=250).text("Fps graph amount")).changed() {
+                  get_mut!(TIME).fps_amount = fps_graph_set.amount;
+               }
+               ui.add(Slider::new(&mut fps_graph_set.include_upper, 0.0..=1000.0).text("Include at least")).changed();
+            });
          });
 
-         let mut data = get!(TIME).past_fps.clone();
-         if data.len() > 0 { data.insert(0, [data[0][0] - 1.0, 0.0]); } // makes the zoom include {y: 0}
+         let data = get!(TIME).past_fps.clone();
 
          let line = Line::new(data);
          Plot::new("my_plot")
@@ -187,6 +207,8 @@ impl MgsApp {
              .allow_scroll(false)
              .allow_zoom(false)
              .allow_boxed_zoom(false)
+             .include_y(0.0)
+             .include_y(fps_graph_set.include_upper)
              .show_axes(Vec2b::new(false, true))
              .show(ui, |plot_ui| plot_ui.line(line));
       });
@@ -282,6 +304,7 @@ where
 pub struct ToggleSwitch<'a> {
    on_off: &'a mut bool,
 }
+
 impl<'a> ToggleSwitch<'a> {
    pub fn new(val: &'a mut bool) -> Self {
       Self {
@@ -289,6 +312,7 @@ impl<'a> ToggleSwitch<'a> {
       }
    }
 }
+
 impl<'a> egui::Widget for ToggleSwitch<'a> {
    fn ui(self, ui: &mut Ui) -> Response {
       let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);

@@ -51,7 +51,7 @@ impl EguiTexturePackage {
       let device = &render_state.device;
       let renderer = &mut render_state.renderer.write();
 
-      let size = Extent3d {
+      let tex_size = Extent3d {
          width: if in_size.width > 0 { in_size.width } else { 1 },
          height: if in_size.height > 0 { in_size.height } else { 1 },
          depth_or_array_layers: 1,
@@ -59,7 +59,7 @@ impl EguiTexturePackage {
 
       let texture = device.create_texture(&TextureDescriptor {
          label: Some("Egui Texture"),
-         size: size.clone(),
+         size: tex_size,
          mip_level_count: 1,
          sample_count: 1,
          dimension: TextureDimension::D2,
@@ -71,7 +71,7 @@ impl EguiTexturePackage {
       let view = texture.create_view(&TextureViewDescriptor::default());
 
       let texture_id = renderer.register_native_texture(
-         &device,
+         device,
          &view,
          wgpu::FilterMode::Linear,
       );
@@ -80,7 +80,7 @@ impl EguiTexturePackage {
          texture,
          view,
          texture_id,
-         size,
+         size: tex_size,
       }
    }
 

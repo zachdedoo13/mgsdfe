@@ -1,5 +1,5 @@
 use egui_wgpu::RenderState;
-use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
+use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineCompilationOptions, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
 
 use crate::utility::helper_structs::{EguiTexturePackage, f32_to_extent};
 use crate::utility::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
@@ -14,7 +14,7 @@ pub struct DisplayTexture {
 impl DisplayTexture {
    pub fn new(render_state: &RenderState, read_bindgroup_layout: &BindGroupLayout) -> Self {
       let device = &render_state.device;
-      let vertex_package = VertexPackage::new(&device, SQUARE_VERTICES, SQUARE_INDICES);
+      let vertex_package = VertexPackage::new(device, SQUARE_VERTICES, SQUARE_INDICES);
 
       let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
@@ -33,7 +33,7 @@ impl DisplayTexture {
          vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main", // 1.
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             buffers: &[
                Vertex::desc(),
             ], // 2.
@@ -42,7 +42,7 @@ impl DisplayTexture {
          fragment: Some(wgpu::FragmentState { // 3.
             module: &shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState { // 4.
                format: TextureFormat::Rgba8Unorm,
                blend: Some(wgpu::BlendState::REPLACE),

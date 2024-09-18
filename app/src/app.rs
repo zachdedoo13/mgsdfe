@@ -42,7 +42,7 @@ impl MgsApp {
       get_mut!(TIME).update();
 
       // update modules
-      self.path_tracer.update(render_state)
+      self.path_tracer.update(render_state);
    }
 }
 

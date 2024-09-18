@@ -18,13 +18,14 @@ pub struct PathTracerRenderer {
    queue_pipeline_remake: bool, // temp
 }
 impl PathTracerRenderer {
+   /// # Panics
    pub fn new(cc: &CreationContext) -> Self {
       let render_state = cc.wgpu_render_state.as_ref().expect("Couldn't unwrap render state");
 
       get_mut_ref!(SETTINGS, settings); let settings = &mut settings.current_scene.parthtrace_settings;
       // settings.last_clear_frame = settings.frame; // reset to avid shizz
 
-      let path_tracer_package = PathTracerPackage::new(render_state, *&settings);
+      let path_tracer_package = PathTracerPackage::new(render_state, settings);
       let display_texture = DisplayTexture::new(render_state, path_tracer_package.storage_textures.read_layout());
 
       Self {
@@ -51,7 +52,7 @@ impl PathTracerRenderer {
       path_set.time = get!(TIME).start_time.elapsed().as_secs_f32();
       path_set.frame += 1;
 
-      self.path_tracer_package.uniform.update_with_data(&render_state.queue, *&path_set);
+      self.path_tracer_package.uniform.update_with_data(&render_state.queue, path_set);
 
       let iss = settings.image_size_settings;
       self.path_tracer_package.storage_textures.size.width = iss.width;
@@ -103,11 +104,11 @@ impl PathTracerRenderer {
             ).sense(Sense::click_and_drag())
          );
 
-         self.handle_input(response);
+         self.handle_input(&response);
       });
    }
 
-   fn handle_input(&mut self, _response: Response) {}
+   fn handle_input(&mut self, _response: &Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
       let mut encoder = render_state.device.create_command_encoder(&CommandEncoderDescriptor {

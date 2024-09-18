@@ -3,7 +3,7 @@ use std::panic::AssertUnwindSafe;
 use std::thread;
 
 use egui_wgpu::RenderState;
-use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu::naga::{FastHashMap, ShaderStage};
 
 use common::singletons::scene::ParthtracerSettings;
@@ -19,12 +19,13 @@ pub struct PathTracerPackage {
 }
 
 impl PathTracerPackage {
+   /// # Panics
    pub fn new(render_state: &RenderState, parthtracer_settings: &ParthtracerSettings) -> Self {
       let device = &render_state.device;
 
       let storage_textures = DualStorageTexturePackage::new(device);
 
-      let shader_module = load_shader(device, String::new()).expect("Failed to load shader"); // todo placeholder
+      let shader_module = load_shader(device, &String::new()).expect("Failed to load shader"); // todo placeholder
 
       let uniform = UniformFactory::new(device, parthtracer_settings);
 
@@ -43,7 +44,7 @@ impl PathTracerPackage {
          layout: Some(&pipeline_layout),
          module: &shader_module,
          entry_point: "main",
-         compilation_options: Default::default(),
+         compilation_options: PipelineCompilationOptions::default(),
       });
 
       Self {
@@ -88,7 +89,7 @@ impl PathTracerPackage {
 
 impl PathTracerPackage {
    pub fn remake_pipeline(&mut self, device: &Device) {
-      let shader_module = load_shader(device, String::new());
+      let shader_module = load_shader(device, &String::new());
 
       if let Ok(sm) = shader_module {
          self.compute_pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
@@ -96,14 +97,14 @@ impl PathTracerPackage {
             layout: Some(&self.pipeline_layout),
             module: &sm,
             entry_point: "main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
          });
       }
    }
 }
 
 
-fn load_shader(device: &Device, _map: String) -> thread::Result<ShaderModule> {
+fn load_shader(device: &Device, _map: &String) -> thread::Result<ShaderModule> {
    // todo placeholder
    // let mapped_code = include_str!("shaders/testing.glsl").to_string();
    // let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
@@ -123,10 +124,10 @@ fn load_shader(device: &Device, _map: String) -> thread::Result<ShaderModule> {
    let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
       let prev_hook = std::panic::take_hook();
       std::panic::set_hook(Box::new(|panic_info| {
-         if let Some(_) = panic_info.payload().downcast_ref::<&str>() {
+         if panic_info.payload().downcast_ref::<&str>().is_some() {
             eprintln!("Panic occurred");
          } else {
-            eprintln!("Panic occurred");
+            eprintln!("Panic occurred ");
          }
          eprintln!("Occurred during the shader compilation");
       }));
@@ -137,10 +138,8 @@ fn load_shader(device: &Device, _map: String) -> thread::Result<ShaderModule> {
       result
    }));
 
-   // let out = Ok(device.create_shader_module(shader_mod));
-
-   if let Ok(_) = out {
-      println!("Compiled")
+   if out.is_ok() {
+      println!("Compiled");
    }
 
    out
