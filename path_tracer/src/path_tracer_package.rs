@@ -26,7 +26,7 @@ impl PathTracerPackage {
 
       let shader_module = load_shader(device, String::new()).expect("Failed to load shader"); // todo placeholder
 
-      let uniform = UniformFactory::new(device, parthtracer_settings); // todo also placeholder
+      let uniform = UniformFactory::new(device, parthtracer_settings);
 
       let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("PathTracerPackage pipeline_layout"),
