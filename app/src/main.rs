@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use wgpu::{Adapter, DeviceDescriptor, Features, Limits};
 
+use wgpu::{Adapter, DeviceDescriptor, Features, Limits};
 
 /// Native
 #[cfg(not(target_arch = "wasm32"))]

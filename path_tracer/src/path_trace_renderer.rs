@@ -1,8 +1,8 @@
 use std::iter;
 
 use eframe::CreationContext;
-use eframe::emath::Vec2;
-use egui::{Button, Image, Response, Sense, Ui};
+use eframe::emath::{Rect, Vec2};
+use egui::{Button, Image, Pos2, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
 use wgpu::{CommandEncoderDescriptor, Extent3d};
@@ -39,7 +39,6 @@ impl PathTracerRenderer {
       }
    }
 
-
    pub fn update(&mut self, render_state: &RenderState) {
       get_mut_ref!(SETTINGS, settings);
 
@@ -65,14 +64,15 @@ impl PathTracerRenderer {
       self.path_tracer_package.storage_textures.update(&render_state.device);
    }
 
-
    pub fn display(&mut self, ui: &mut Ui) {
+      // init
       let max = to_extent(ui.available_size());
       let mut ms = max;
 
       get_mut_ref!(SETTINGS, settings);
       let iss = settings.image_size_settings;
 
+      // calc texture size
       if iss.maintain_aspect_ratio {
          let aspect = {
             let w = iss.width;
@@ -89,14 +89,10 @@ impl PathTracerRenderer {
             ms.width -= diff as u32;
          }
       }
-
       self.display_texture.texture.size = ms;
 
+      // display texture
       ui.horizontal(|ui| {
-         // if ui.button("🔄").clicked() {
-         //    self.queue_pipeline_remake = true;
-         // }
-
          let response = ui.add(
             Image::from_texture(
                SizedTexture::new(
@@ -109,19 +105,18 @@ impl PathTracerRenderer {
             ).sense(Sense::click_and_drag())
          );
 
-         let mut rect = response.rect;
-         rect.set_width(15.0);
-         rect.set_height(15.0);
-
+         // refresh button
+         let rect = Rect::from_center_size(response.rect.min + Pos2::new(10.0, 10.0).to_vec2(), Vec2::new(20.0, 20.0));
          if ui.put(rect, Button::new("🔄")).clicked() {
             self.queue_pipeline_remake = true;
          }
 
-         self.handle_input(&response);
+         // delegate input
+         self.handle_input(ui, &response);
       });
    }
 
-   fn handle_input(&mut self, _response: &Response) {}
+   fn handle_input(&mut self, _ui: &mut Ui,  _response: &Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
       let mut encoder = render_state.device.create_command_encoder(&CommandEncoderDescriptor {

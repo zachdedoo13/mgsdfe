@@ -5,7 +5,7 @@ use eframe::epaint::Rgba;
 use egui::{CentralPanel, Context, Visuals};
 use egui_wgpu::RenderState;
 
-use common::{get_mut, set_none_static, timer};
+use common::{get_mut, set_none_static};
 use common::singletons::settings::{SETTINGS, Settings};
 use common::singletons::time_package::TIME;
 use graph_editor::GraphEditor;
@@ -62,11 +62,11 @@ impl App for MgsApp {
    }
 
    fn save(&mut self, storage: &mut dyn Storage) {
-      timer!("Autosaved in", {
-         self.graph_editor.save(storage);
-         self.ui_state.save(storage);
-         get_mut!(SETTINGS).save(storage);
-      });
+      self.graph_editor.save(storage);
+      self.ui_state.save(storage);
+      get_mut!(SETTINGS).save(storage);
+
+      println!("TEST PRINT !!!");
    }
 
    fn on_exit(&mut self) {}
