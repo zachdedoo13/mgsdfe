@@ -3,6 +3,7 @@ use std::panic::AssertUnwindSafe;
 use std::thread;
 
 use egui_wgpu::RenderState;
+use log::error;
 use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu::naga::{FastHashMap, ShaderStage};
 
@@ -104,7 +105,12 @@ impl PathTracerPackage {
 }
 
 
-fn load_shader(device: &Device, _map: &String) -> thread::Result<ShaderModule> {
+fn load_shader(device: &Device, map: &String) -> thread::Result<ShaderModule> {
+   load_shader_wgpu(device, map)
+   // load_shader_with_naga(device)
+}
+
+fn load_shader_wgpu(device: &Device, _map: &String) -> thread::Result<ShaderModule> {
    // todo placeholder
    // let mapped_code = include_str!("shaders/testing.glsl").to_string();
    // let mapped_code = std::fs::read_to_string("path_tracer/src/shaders/testing.glsl").unwrap();
@@ -124,12 +130,12 @@ fn load_shader(device: &Device, _map: &String) -> thread::Result<ShaderModule> {
    let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
       let prev_hook = std::panic::take_hook();
       std::panic::set_hook(Box::new(|panic_info| {
-         if panic_info.payload().downcast_ref::<&str>().is_some() {
-            eprintln!("Panic occurred");
+         if let Some(e) = panic_info.payload().downcast_ref::<&str>() {
+            error!("Panic occurred with e {e}");
          } else {
-            eprintln!("Panic occurred ");
+            error!("Panic occurred ");
          }
-         eprintln!("Occurred during the shader compilation");
+         error!("Occurred during the shader compilation");
       }));
       let result = device.create_shader_module(shader_mod);
 
@@ -145,3 +151,53 @@ fn load_shader(device: &Device, _map: &String) -> thread::Result<ShaderModule> {
    out
 }
 
+// fn load_shader_with_naga(device: &Device) -> thread::Result<ShaderModule> {
+//    use wgpu::naga::{front::glsl, valid, back::spv};
+//
+//    let glsl_code = include_str!("shaders/testing.glsl").to_string();
+//
+//    let mut parser = glsl::Frontend::default();
+//    let module = parser
+//        .parse(&glsl::Options { stage: ShaderStage::Compute, defines: Default::default() }, &glsl_code)
+//        .expect("Failed to parse GLSL code");
+//
+//    let module_info = valid::Validator::new(valid::ValidationFlags::all(), valid::Capabilities::all())
+//        .validate(&module)
+//        .expect("Failed to validate module");
+//
+//    let mut spv_writer = spv::Writer::new(&spv::Options::default()).expect("Failed to create SPIR-V writer");
+//    let mut spv = Vec::new();
+//    if let Err(e) = spv_writer.write(&module, &module_info, None, &None, &mut spv) {
+//       return Err(Box::new(e));
+//    }
+//
+//    let spirv = spv.iter().flat_map(|w| w.to_le_bytes()).collect::<Vec<u8>>();
+//
+//    let shader_mod = ShaderModuleDescriptor {
+//       label: None,
+//       source: ShaderSource::SpirV(Cow::Borrowed(bytemuck::cast_slice(&spirv))),
+//    };
+//
+//    let out = std::panic::catch_unwind(AssertUnwindSafe(|| {
+//       let prev_hook = std::panic::take_hook();
+//       std::panic::set_hook(Box::new(|panic_info| {
+//          if let Some(e) = panic_info.payload().downcast_ref::<&str>() {
+//             error!("Panic occurred with e {e}");
+//          } else {
+//             error!("Panic occurred ");
+//          }
+//          error!("Occurred during the shader compilation");
+//       }));
+//       let result = device.create_shader_module(shader_mod);
+//
+//       std::panic::set_hook(prev_hook);
+//
+//       result
+//    }));
+//
+//    if out.is_ok() {
+//       println!("Compiled");
+//    }
+//
+//    out
+// }

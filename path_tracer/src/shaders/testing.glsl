@@ -260,41 +260,42 @@ bool bool_hit(vec2 intersect) {
 // Map //
 /////////
 
-float shape(int index, vec3 data) {
-    switch (index) {
-        case 0:
-            return sdSphere(data, data.x);
-        case 1:
-            return sdCube(data, data);
-        case 2:
-            return sdOctahedronExact(data, data.x);
-        case 3:
-            return sdMandelbulb(data, data.x);
-        default:
-            return 0.0; // Default case if no match is found
-    }
-}
+// todo! crash on web only becuase why the fuck not
+//float shape(int index, vec3 data) {
+//    switch (index) {
+//        case 0:
+//            return sdSphere(data, data.x);
+//        case 1:
+//            return sdCube(data, data);
+//        case 2:
+//            return sdOctahedronExact(data, data.x);
+//        case 3:
+//            return sdMandelbulb(data, data.x);
+//        default:
+//            return 0.0; // Default case if no match is found
+//    }
+//}
 
-Hit a_union(int index, Hit h1, Hit h2, float k) {
-    switch (index) {
-        case 0:
-            return opSmoothUnion(h1, h2, k);
-        case 1:
-            return opSmoothSubtraction(h1, h2, k);
-        case 2:
-            return opSmoothIntersection(h1, h2, k);
-        case 3:
-            return opUnion(h1, h2);
-        case 4:
-            return opSubtraction(h1, h2);
-        case 5:
-            return opIntersection(h1, h2);
-        case 6:
-            return opXor(h1, h2);
-        default:
-            return h1; // Default case if no match is found
-    }
-}
+//Hit a_union(int index, Hit h1, Hit h2, float k) {
+//    switch (index) {
+//        case 0:
+//            return opSmoothUnion(h1, h2, k);
+//        case 1:
+//            return opSmoothSubtraction(h1, h2, k);
+//        case 2:
+//            return opSmoothIntersection(h1, h2, k);
+//        case 3:
+//            return opUnion(h1, h2);
+//        case 4:
+//            return opSubtraction(h1, h2);
+//        case 5:
+//            return opIntersection(h1, h2);
+//        case 6:
+//            return opXor(h1, h2);
+//        default:
+//            return h1; // Default case if no match is found
+//    }
+//}
 
 
 
