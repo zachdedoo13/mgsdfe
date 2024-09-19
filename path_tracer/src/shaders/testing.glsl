@@ -300,7 +300,7 @@ Hit a_union(int index, Hit h1, Hit h2, float k) {
 
 Hit map(vec3 p_in) {
 
-    return Hit(0.0);
+    return Hit(sdSphere(p_in, 1.0));
 }
 
 
@@ -366,7 +366,7 @@ void main() {
 
     vec4 trace = pathtrace(ray);
 
-    vec4 col = vec4(vec3(uv, 0.0) * sin(s.time), 1.0);
+//    vec4 col = vec4(vec3(uv, 0.0) * sin(s.time), 1.0);
 
-    imageStore(write_tex, gl_uv, col);
+    imageStore(write_tex, gl_uv, trace);
 }

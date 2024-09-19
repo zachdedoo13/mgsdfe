@@ -139,6 +139,8 @@ impl MgsApp {
 
    fn tracer_settings(&mut self, ui: &mut Ui) {
       ScrollArea::vertical().show(ui, |ui| {
+         ui.add_space(50.0);
+
          get_mut!(SETTINGS).current_scene.parthtrace_settings.ui(ui);
 
          self.image_render_settings(ui);
@@ -236,9 +238,12 @@ impl MgsApp {
          ui.group(|ui| {
             ui.horizontal(|ui| {
                ui.add(ToggleSwitch::new(&mut iss.maintain_aspect_ratio));
+
                ui.label("Maintain aspect");
             });
-         });
+         }).response.on_hover_text("Whether the image expands to fit available space regardless of aspect or forces correct aspect");
+
+         enum_combination_box(ui, &mut iss.sampling_type, "Sampling type");
 
          {
             let aspect_ratios = vec![
@@ -262,8 +267,10 @@ impl MgsApp {
             let h = (iss.aspect_scale as f32 * aspect) as u32;
             let w = (iss.aspect_scale as f32) as u32;
 
-            ui.label(format!("Dimensions => {w}x{h}"));
-            ui.label(format!("Total pixels => {:.2} Million", (w * h) as f32 / 1_000_000.0));
+            ui.group(|ui| {
+               ui.label(format!("Dimensions => {w}x{h}"));
+               ui.label(format!("Total pixels => {:.2} Million", (w * h) as f32 / 1_000_000.0));
+            });
 
             iss.width = w;
             iss.height = h;

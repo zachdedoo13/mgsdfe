@@ -1,13 +1,16 @@
 use std::iter;
+
 use eframe::CreationContext;
 use eframe::emath::Vec2;
-use egui::{Image, Response, Sense, Ui};
+use egui::{Button, Image, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
 use wgpu::{CommandEncoderDescriptor, Extent3d};
+
 use common::{get, get_mut_ref};
 use common::singletons::settings::SETTINGS;
 use common::singletons::time_package::TIME;
+
 use crate::display_texture_pipeline::DisplayTexture;
 use crate::path_tracer_package::PathTracerPackage;
 
@@ -17,16 +20,17 @@ pub struct PathTracerRenderer {
 
    queue_pipeline_remake: bool, // temp
 }
+
 impl PathTracerRenderer {
    /// # Panics
    pub fn new(cc: &CreationContext) -> Self {
       let render_state = cc.wgpu_render_state.as_ref().expect("Couldn't unwrap render state");
 
-      get_mut_ref!(SETTINGS, settings); let settings = &mut settings.current_scene.parthtrace_settings;
-      // settings.last_clear_frame = settings.frame; // reset to avid shizz
+      get_mut_ref!(SETTINGS, settings);
 
-      let path_tracer_package = PathTracerPackage::new(render_state, settings);
-      let display_texture = DisplayTexture::new(render_state, path_tracer_package.storage_textures.read_layout());
+      let path_tracer_package = PathTracerPackage::new(render_state, &settings.current_scene.parthtrace_settings);
+      let display_texture =
+          DisplayTexture::new(render_state, path_tracer_package.storage_textures.read_layout(), &settings.image_size_settings);
 
       Self {
          path_tracer_package,
@@ -37,9 +41,11 @@ impl PathTracerRenderer {
 
 
    pub fn update(&mut self, render_state: &RenderState) {
+      get_mut_ref!(SETTINGS, settings);
+
       self.render_pass(render_state);
 
-      self.display_texture.update(render_state);
+      self.display_texture.update(render_state, &settings.image_size_settings);
 
       if self.queue_pipeline_remake {
          self.path_tracer_package.remake_pipeline(&render_state.device);
@@ -47,7 +53,6 @@ impl PathTracerRenderer {
       }
 
       // update scene
-      get_mut_ref!(SETTINGS, settings);
       let path_set = &mut settings.current_scene.parthtrace_settings;
       path_set.time = get!(TIME).start_time.elapsed().as_secs_f32();
       path_set.frame += 1;
@@ -88,9 +93,9 @@ impl PathTracerRenderer {
       self.display_texture.texture.size = ms;
 
       ui.horizontal(|ui| {
-         if ui.button("🔄").clicked() {
-            self.queue_pipeline_remake = true;
-         }
+         // if ui.button("🔄").clicked() {
+         //    self.queue_pipeline_remake = true;
+         // }
 
          let response = ui.add(
             Image::from_texture(
@@ -103,6 +108,14 @@ impl PathTracerRenderer {
                )
             ).sense(Sense::click_and_drag())
          );
+
+         let mut rect = response.rect;
+         rect.set_width(15.0);
+         rect.set_height(15.0);
+
+         if ui.put(rect, Button::new("🔄")).clicked() {
+            self.queue_pipeline_remake = true;
+         }
 
          self.handle_input(&response);
       });

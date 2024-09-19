@@ -1,7 +1,10 @@
+use bytemuck::{Pod, Zeroable};
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineCompilationOptions, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
 
-use crate::utility::helper_structs::{EguiTexturePackage, f32_to_extent};
+use common::singletons::settings::{ImageSizeSettings, SamplingType};
+
+use crate::utility::helper_structs::{EguiTexturePackage, f32_to_extent, UniformFactory};
 use crate::utility::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
 use crate::utility::vertex_package::{Vertex, VertexPackage};
 
@@ -9,17 +12,21 @@ pub struct DisplayTexture {
    vertex_package: VertexPackage,
    pub pipeline: RenderPipeline,
    pub texture: EguiTexturePackage,
+   pub uniform: UniformFactory<DisplaySettings>,
 }
 
 impl DisplayTexture {
-   pub fn new(render_state: &RenderState, read_bindgroup_layout: &BindGroupLayout) -> Self {
+   pub fn new(render_state: &RenderState, read_bindgroup_layout: &BindGroupLayout, iss: &ImageSizeSettings) -> Self {
       let device = &render_state.device;
       let vertex_package = VertexPackage::new(device, SQUARE_VERTICES, SQUARE_INDICES);
+
+      let uniform = UniformFactory::new(&render_state.device, &DisplaySettings::from_settings(iss));
 
       let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
          label: Some("Render Pipeline Layout"),
          bind_group_layouts: &[
             read_bindgroup_layout,
+            &uniform.layout,
          ],
          push_constant_ranges: &[],
       });
@@ -79,11 +86,13 @@ impl DisplayTexture {
          vertex_package,
          pipeline,
          texture,
+         uniform,
       }
    }
 
-   pub fn update(&mut self, render_state: &RenderState) {
+   pub fn update(&mut self, render_state: &RenderState, iss: &ImageSizeSettings) {
       self.texture.update(render_state);
+      self.uniform.update_with_data(&render_state.queue, &DisplaySettings::from_settings(iss))
    }
 
    pub fn render_pass(&self, encoder: &mut CommandEncoder, read_bindgroup: &BindGroup) {
@@ -113,10 +122,31 @@ impl DisplayTexture {
       render_pass.set_pipeline(&self.pipeline);
 
       render_pass.set_bind_group(0, read_bindgroup, &[]);
+      render_pass.set_bind_group(1, &self.uniform.bind_group, &[]);
 
       render_pass.set_vertex_buffer(0, self.vertex_package.vertex_buffer.slice(..));
       render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
 
       render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
+   }
+}
+
+
+#[repr(C)]
+#[derive(Pod, Zeroable, Copy, Clone)]
+pub struct DisplaySettings {
+   sampling_type: u32,
+}
+
+impl DisplaySettings {
+   pub fn from_settings(iss: &ImageSizeSettings) -> Self {
+      let sampling_type = match iss.sampling_type {
+         SamplingType::Biliniur => 1,
+         SamplingType::Linear => 0,
+      };
+
+      Self {
+         sampling_type,
+      }
    }
 }

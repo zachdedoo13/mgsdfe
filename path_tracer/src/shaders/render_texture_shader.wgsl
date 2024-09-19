@@ -22,14 +22,30 @@ fn vs_main(model: VertexInput,
 @group(0) @binding(0)
 var read_texture: texture_storage_2d<rgba32float, read>;
 
+struct DisplaySettings {
+    sample_type: u32,
+}
+@group(1) @binding(0)
+var<uniform> dis_set: DisplaySettings;
+
 @fragment
 fn fs_main(
     in: VertexOutput,
 ) -> @location(0) vec4<f32> {
     var uv = in.uv * 0.5 + 0.5;
 
+    var color: vec3<f32>;
 
-    let color: vec3<f32> = bilinear(uv);
+    if (dis_set.sample_type == 0u) {
+        color = nns(uv);
+    } else if (dis_set.sample_type == 1u) {
+        color = bilinear(uv);
+    } else {
+        color = vec3<f32>(0.0, 0.0, 0.0); // default case
+    }
+
+    // i could change this to useing native samplers if i edit the storage texture package to include a texture binging aswell as read/write
+    // then have the sampler in display_texture_pipeline
 
 
     return vec4(color,  1.0);

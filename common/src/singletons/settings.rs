@@ -1,7 +1,9 @@
 use catppuccin_egui::{FRAPPE, LATTE, MACCHIATO, MOCHA};
-use eframe::egui::{Context, Visuals};
 use eframe::{CreationContext, Storage};
+use eframe::egui::{Context, Visuals};
 use serde_json::{from_str, to_string};
+use strum::{Display, EnumIter};
+
 use crate::init_none_static;
 use crate::singletons::scene::Scene;
 
@@ -19,6 +21,7 @@ pub struct Settings {
 
    pub graph_settings: GraphSettings,
 }
+
 impl Settings {
    /// init loading from context
    /// # Panics
@@ -57,7 +60,7 @@ impl Default for Settings {
 ////////////////////
 // Theme settings //
 ////////////////////
-#[derive(PartialEq, Clone, Debug, Copy, strum::EnumIter, strum::Display)]
+#[derive(PartialEq, Clone, Debug, Copy, EnumIter, Display)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum Theme {
    Dark,
@@ -67,6 +70,7 @@ pub enum Theme {
    Macchiato,
    Mocha,
 }
+
 impl Theme {
    pub fn set_theme(&self, ctx: &Context) {
       match self {
@@ -92,7 +96,10 @@ pub struct ImageSizeSettings {
 
    pub width: u32,
    pub height: u32,
+
+   pub sampling_type: SamplingType,
 }
+
 impl Default for ImageSizeSettings {
    fn default() -> Self {
       Self {
@@ -102,8 +109,16 @@ impl Default for ImageSizeSettings {
 
          width: 1920,
          height: 1080,
+
+         sampling_type: SamplingType::Biliniur,
       }
    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone, EnumIter, Debug, PartialEq)]
+pub enum SamplingType {
+   Biliniur,
+   Linear,
 }
 
 
@@ -126,6 +141,7 @@ impl Default for GraphSettings {
       }
    }
 }
+
 #[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
 pub struct FpsGraphSettings {
    pub include_upper: f32,

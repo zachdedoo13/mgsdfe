@@ -2,7 +2,7 @@ use instant::Instant;
 use crate::init_static;
 
 // time singleton
-init_static!(TIME: TimePackage => { TimePackage::new() });
+init_static!(TIME: TimePackage => { TimePackage::default() });
 
 
 /// max for framerate averaging, turn down for performance
@@ -23,23 +23,6 @@ pub struct TimePackage {
    pub fps_amount: usize,
 }
 impl TimePackage {
-   pub fn new() -> Self {
-      Self {
-         fps: 0.0,
-         past_fps: vec![],
-         delta_time: 0.0,
-         frame_counter: 0,
-
-         start_time: Instant::now(),
-         last_frame: Instant::now(),
-         last_data_dump: Instant::now(),
-         past_delta_times: vec![],
-
-         fps_update_interval: 0.25,
-         fps_amount: 100,
-      }
-   }
-
    pub fn update(&mut self) {
       self.delta_time = self.last_frame.elapsed().as_secs_f64();
 
@@ -69,6 +52,24 @@ impl TimePackage {
 
       if diff > 0 {
          self.past_fps.drain(0..(diff as usize));
+      }
+   }
+}
+impl Default for TimePackage {
+   fn default() -> Self {
+      Self {
+         fps: 0.0,
+         past_fps: vec![],
+         delta_time: 0.0,
+         frame_counter: 0,
+
+         start_time: Instant::now(),
+         last_frame: Instant::now(),
+         last_data_dump: Instant::now(),
+         past_delta_times: vec![],
+
+         fps_update_interval: 0.25,
+         fps_amount: 100,
       }
    }
 }
