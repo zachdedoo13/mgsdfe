@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-
+use std::mem::size_of;
 use bytemuck::{bytes_of, Pod, Zeroable};
 use eframe::epaint::TextureId;
 use egui_wgpu::RenderState;

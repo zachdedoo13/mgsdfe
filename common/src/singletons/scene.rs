@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use eframe::egui::{DragValue, Ui};
+use eframe::egui::{CollapsingHeader, DragValue, Ui};
 
 /// used to hold all data for the node-graph and raymarching
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -74,9 +74,9 @@ impl Default for ParthtracerSettings {
          frame: 0,
          last_clear_frame: 0,
          samples_per_frame: 0,
-         steps_per_ray: 0,
-         bounces: 0,
-         fov: 0.0,
+         steps_per_ray: 80,
+         bounces: 8,
+         fov: 1.0,
          camera_pos: [0.0, 0.0, 0.0],
          camera_dir: [0.0, 0.0, 0.0],
       }
@@ -85,25 +85,33 @@ impl Default for ParthtracerSettings {
 impl ParthtracerSettings {
    pub fn ui(&mut self, ui: &mut Ui) {
       ui.group(|ui| {
-         ui.label(format!("Time -> {}", self.time));
-         ui.label(format!("Frame -> {}", self.frame));
-         ui.label(format!("Last clear frame -> {}", self.last_clear_frame));
+         CollapsingHeader::new("Variables").show(ui, |ui| {
+                ui.label(format!("Time -> {}", self.time));
+                ui.label(format!("Frame -> {}", self.frame));
+                ui.label(format!("Last clear frame -> {}", self.last_clear_frame));
+             });
 
-         ui.add_space(15.0);
-
-         ui.add(DragValue::new(&mut self.samples_per_frame).range(1..=16).speed(0.01).prefix("Samples per frame"));
-         ui.add(DragValue::new(&mut self.steps_per_ray).range(1..=320).speed(0.1).prefix("Steps per ray"));
-         ui.add(DragValue::new(&mut self.bounces).range(0..=32).speed(0.1).prefix("Bounces"));
-
-         ui.add_space(15.0);
-
-         ui.add(DragValue::new(&mut self.fov).range(0.0..=10.0).speed(0.001).prefix("FOV"));
-
-         ui.horizontal(|ui| {
-            ui.add(DragValue::new(&mut self.camera_pos[0]).range(-100.0..=100.0).speed(0.01).prefix("Camera Pos X"));
-            ui.add(DragValue::new(&mut self.camera_pos[1]).range(-100.0..=100.0).speed(0.01).prefix("Camera Pos Y"));
-            ui.add(DragValue::new(&mut self.camera_pos[2]).range(-100.0..=100.0).speed(0.01).prefix("Camera Pos Z"));
+         ui.group(|ui| {
+            ui.label("Render");
+            ui.horizontal(|ui| {
+               ui.add(DragValue::new(&mut self.samples_per_frame).range(1..=16).speed(0.01).prefix("Samples: "));
+               ui.add(DragValue::new(&mut self.steps_per_ray).range(1..=320).speed(0.1).prefix("Steps: "));
+               ui.add(DragValue::new(&mut self.bounces).range(0..=32).speed(0.1).prefix("Bounces: "));
+            });
+            ui.horizontal(|ui| {
+               ui.add(DragValue::new(&mut self.fov).range(0.0..=10.0).speed(0.001).prefix("FOV"));
+            })
          });
+
+         ui.group(|ui| {
+            ui.label("Camera position");
+            ui.horizontal(|ui| {
+               ui.add(DragValue::new(&mut self.camera_pos[0]).range(-100.0..=100.0).speed(0.01).prefix("X: "));
+               ui.add(DragValue::new(&mut self.camera_pos[1]).range(-100.0..=100.0).speed(0.01).prefix("Y: "));
+               ui.add(DragValue::new(&mut self.camera_pos[2]).range(-100.0..=100.0).speed(0.01).prefix("Z: "));
+            });
+         });
+
       });
    }
 }

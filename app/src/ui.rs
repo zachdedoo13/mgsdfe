@@ -139,11 +139,20 @@ impl MgsApp {
 
    fn tracer_settings(&mut self, ui: &mut Ui) {
       ScrollArea::vertical().show(ui, |ui| {
-         ui.add_space(50.0);
+         ui.add_space(10.0);
 
-         get_mut!(SETTINGS).current_scene.parthtrace_settings.ui(ui);
+         ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+               get_mut!(SETTINGS).current_scene.parthtrace_settings.ui(ui);
+            });
 
-         self.image_render_settings(ui);
+            ui.vertical(|ui| {
+               self.image_render_settings(ui);
+            });
+
+         });
+
+         ui.set_min_width(ui.available_width());
       });
    }
 
