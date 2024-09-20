@@ -3,6 +3,7 @@ use eframe::{CreationContext, Storage};
 use eframe::egui::{Context, Visuals};
 use serde_json::{from_str, to_string};
 use strum::{Display, EnumIter};
+use wgpu::PresentMode;
 
 use crate::init_none_static;
 use crate::singletons::scene::Scene;
@@ -147,4 +148,34 @@ pub struct FpsGraphSettings {
    pub include_upper: f32,
    pub update_rate: f64,
    pub amount: usize,
+}
+
+//////////////////
+// Present mode //
+//////////////////
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
+pub struct PresentModeSettings {
+   pub present_mode: PmWrapper,
+   pub changed: bool,
+}
+#[derive(serde::Serialize, serde::Deserialize, Copy, Clone, EnumIter, Debug, PartialEq)]
+pub enum PmWrapper {
+   Immediate,
+   Vsync,
+   Fifo,
+   FifoRelaxed,
+   Mailbox,
+   AutoNoVsync,
+}
+impl PmWrapper {
+   pub fn to_present_mode(&self) -> PresentMode {
+      match self {
+         PmWrapper::Immediate => PresentMode::Immediate,
+         PmWrapper::Vsync => PresentMode::AutoVsync,
+         PmWrapper::Fifo => PresentMode::Fifo,
+         PmWrapper::FifoRelaxed => PresentMode::FifoRelaxed,
+         PmWrapper::Mailbox => PresentMode::Mailbox,
+         PmWrapper::AutoNoVsync => PresentMode::AutoNoVsync,
+      }
+   }
 }
