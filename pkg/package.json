@@ -1,0 +1,15 @@
+{
+  "name": "mgsdfe",
+  "type": "module",
+  "version": "0.2.2",
+  "files": [
+    "mgsdfe_bg.wasm",
+    "mgsdfe.js",
+    "mgsdfe.d.ts"
+  ],
+  "main": "mgsdfe.js",
+  "types": "mgsdfe.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

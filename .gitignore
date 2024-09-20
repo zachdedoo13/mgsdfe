@@ -1,2 +1,3 @@
-/target/
-/app/pkg/.gitignore
+/target
+/pkg
+/pkg/.gitignore
