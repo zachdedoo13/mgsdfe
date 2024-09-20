@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use eframe::{CreationContext, Storage};
-use egui::{CentralPanel, ComboBox, FontId, Response, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
+use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, Response, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
 use egui_plot::{Line, Plot};
 use serde_json::{from_str, to_string};
 use strum::IntoEnumIterator;
@@ -172,7 +172,13 @@ impl MgsApp {
          }
 
          MainContentPage::Settings => {
-            self.settings_page(ui);
+            ScrollArea::vertical()
+                .show(ui, |ui| {
+                   self.settings_page(ui);
+
+                   // moves scroll bar to the right
+                   ui.set_min_width(ui.available_size().x)
+                });
          }
       }
    }
@@ -231,6 +237,54 @@ impl MgsApp {
       ui.group(|ui| {
          ui.label("Theme");
          if enum_combination_box(ui, &mut settings.theme, "Theme") { settings.theme.set_theme(ui.ctx()) };
+      });
+
+      // Zoom
+      ui.group(|ui| {
+         let step = 0.05;
+         let lower = 0.5;
+         let upper = 2.0;
+
+         ui.label("Zoom");
+
+         ui.horizontal(|ui| {
+            let un_rounded = ui.ctx().zoom_factor();
+            let mut z = (un_rounded * 100.0).round() / 100.0;
+
+            if ui.button("-").clicked() {
+               z -= step;
+            }
+
+            ui.add(DragValue::new(&mut z).speed(0.001).range(lower..=upper).suffix("%"));
+
+            if ui.button("+").clicked() {
+               z += step;
+            }
+
+            ui.add_space(5.0);
+            if ui.button("🔄").clicked() {
+               z = 1.0;
+            }
+
+
+            if z < lower {
+               z = lower
+            }
+            else if z > upper {
+               z = upper
+            }
+
+            ui.ctx().set_zoom_factor(z);
+         });
+      });
+
+      // dev settings
+      ui.group(|ui| {
+         CollapsingHeader::new("Developer Settings")
+             .show(ui, |ui| {
+                let ctx = ui.ctx().clone();
+                ctx.settings_ui(ui);
+             });
       });
    }
 

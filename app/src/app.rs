@@ -48,6 +48,10 @@ impl MgsApp {
       // update modules
       self.path_tracer.update(render_state);
    }
+
+   pub fn restart(&mut self) {
+      self.restart_queued = true;
+   }
 }
 
 
