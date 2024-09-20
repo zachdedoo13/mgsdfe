@@ -5,8 +5,8 @@ use eframe::emath::{Rect, Vec2};
 use egui::{Button, Image, Pos2, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
-use instant::Instant;
-use wgpu::{CommandEncoderDescriptor, Extent3d};
+use wgpu::{BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, QuerySetDescriptor, QueryType};
+
 use crate::{get, get_mut_ref};
 use crate::path_tracer::display_texture_pipeline::DisplayTexture;
 use crate::path_tracer::path_tracer_package::PathTracerPackage;
@@ -17,7 +17,7 @@ pub struct PathTracerRenderer {
    path_tracer_package: PathTracerPackage,
    display_texture: DisplayTexture,
 
-   queue_pipeline_remake: bool, // temp
+   queue_pipeline_remake: bool,
 }
 
 impl PathTracerRenderer {
@@ -117,19 +117,63 @@ impl PathTracerRenderer {
       });
    }
 
-   fn handle_input(&mut self, _ui: &mut Ui,  _response: &Response) {}
+   fn handle_input(&mut self, _ui: &mut Ui, _response: &Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
+      let count = 2;
+
+      let query_set = render_state.device.create_query_set(&QuerySetDescriptor {
+         label: Some("Timestamp query"),
+         ty: QueryType::Timestamp,
+         count,
+      });
+
+      let buffer_size = 8 * count as u64;
+
+      let query_buffer = render_state.device.create_buffer(&BufferDescriptor {
+         label: Some("query_buffer"),
+         size: buffer_size,
+         usage: BufferUsages::QUERY_RESOLVE |
+             BufferUsages::STORAGE |
+             BufferUsages::COPY_DST |
+             BufferUsages::COPY_SRC,
+         mapped_at_creation: false,
+      });
+
+      let cpu_buffer = render_state.device.create_buffer(&BufferDescriptor {
+         label: Some("query_buffer"),
+         size: buffer_size,
+         usage: BufferUsages::MAP_READ | BufferUsages::COPY_DST,
+         mapped_at_creation: false,
+      });
+
+
       let mut encoder = render_state.device.create_command_encoder(&CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
+
+      // encoder.write_timestamp(&query_set, 0);
 
       {
          self.path_tracer_package.render_pass(&mut encoder);
          self.display_texture.render_pass(&mut encoder, &self.path_tracer_package.storage_textures.textures.item_one().read_bind_group);
       }
+      //
+      // encoder.write_timestamp(&query_set, 1);
+      //
+      // encoder.resolve_query_set(&query_set, 0..count, &query_buffer, 0);
+      //
+      // encoder.copy_buffer_to_buffer(&query_buffer, 0, &cpu_buffer, 0, buffer_size);
 
       render_state.queue.submit(iter::once(encoder.finish()));
+
+
+      // read
+      // let buffer_slice = cpu_buffer.slice(..);
+      // // let (sender, receiver) = flume::bounded(1);
+      // // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+      //
+      // render_state.device.poll(wgpu::Maintain::wait()).panic_on_timeout();
    }
 }
 

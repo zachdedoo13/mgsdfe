@@ -15,7 +15,10 @@ fn main() -> eframe::Result {
    let device_descriptor_fn: Arc<dyn Fn(&Adapter) -> DeviceDescriptor<'static>> = Arc::new(|_adapter: &Adapter| {
       DeviceDescriptor {
          label: Some("wgpu native device desc"),
-         required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+         required_features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES |
+             Features::TIMESTAMP_QUERY_INSIDE_PASSES |
+             Features::TIMESTAMP_QUERY |
+             Features::TIMESTAMP_QUERY_INSIDE_ENCODERS,
          required_limits: Limits::default(),
       }
    });

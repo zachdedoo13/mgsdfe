@@ -1,14 +1,13 @@
-use std::fmt::Debug;
-
 use eframe::{CreationContext, Storage};
-use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, Response, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
-use egui_plot::{Line, Plot};
+use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
+use egui_plot::{Legend, Line, Plot};
 use serde_json::{from_str, to_string};
-use strum::IntoEnumIterator;
-use crate::app::MgsApp;
+
 use crate::{get, get_mut, get_mut_ref};
+use crate::app::MgsApp;
 use crate::singletons::settings::SETTINGS;
 use crate::singletons::time_package::TIME;
+use crate::user_interface::ui_modules::{enum_combination_box, ToggleSwitch};
 
 #[derive(Copy, Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -185,13 +184,15 @@ impl MgsApp {
 impl MgsApp {
    fn stats(&mut self, ui: &mut Ui) {
       get_mut_ref!(SETTINGS, settings);
-      let graph_set = &mut settings.graph_settings;
-      let fps_graph_set = &mut graph_set.fps_graph_settings;
+      let mw = per_width(ui, 0.25);
+      ui.set_max_width(mw);
+
 
       // fps graph
       ui.group(|ui| {
-         let mw = per_width(ui, 0.25);
-         ui.set_max_width(mw);
+         let graph_set = &mut settings.graph_settings;
+         let fps_graph_set = &mut graph_set.fps_graph_settings;
+
 
          ui.horizontal(|ui| {
             ui.heading("Application Fps");
@@ -224,6 +225,45 @@ impl MgsApp {
              .include_y(fps_graph_set.include_upper)
              .show_axes(Vec2b::new(false, true))
              .show(ui, |plot_ui| plot_ui.line(line));
+      });
+
+      // test graph
+      ui.group(|ui| {
+         let mut data_one = vec![];
+         let mut refrence = 20.0;
+         for i in 0..100 {
+            data_one.push([i as f64, refrence]);
+            refrence += (random_number(i) - 0.5) * 2.0;
+         }
+         let line_one = Line::new(data_one)
+             .fill(0.0)
+             .name("One")
+             ;
+
+         let mut data_two = vec![];
+         let mut refrence = 10.0;
+         for i in 0..100 {
+            data_two.push([i as f64, refrence]);
+            refrence += (random_number(i) - 0.5) * 2.0;
+         }
+         let line_two = Line::new(data_two)
+             .fill(0.0)
+             .name("Two");
+
+         Plot::new("test_plot")
+             .view_aspect(2.0)
+             .allow_drag(false)
+             .allow_scroll(false)
+             .allow_zoom(false)
+             .allow_boxed_zoom(false)
+             .include_y(0.0)
+             .include_y(0.0)
+             .show_axes(Vec2b::new(false, true))
+             .legend(Legend::default())
+             .show(ui, |plot_ui| {
+                plot_ui.line(line_one);
+                plot_ui.line(line_two);
+             });
       });
    }
 
@@ -267,8 +307,7 @@ impl MgsApp {
 
             if z < lower {
                z = lower
-            }
-            else if z > upper {
+            } else if z > upper {
                z = upper
             }
 
@@ -348,66 +387,17 @@ fn per_width(ui: &mut Ui, per: f32) -> f32 {
    ui.ctx().screen_rect().width() * per
 }
 
-//////////////////////////
-// Ui related functions //
-//////////////////////////
+fn random_number(seed: u32) -> f64 {
+   // Constants for the Middle Square Weyl Sequence (MSWS)
+   const W: u64 = 0xb5ad4eceda1ce2a9;
+   let mut x = (seed as u64).wrapping_add(W);
+   let mut s: u64 = 0;
 
-/// returns a true if changed
-pub fn enum_combination_box<T, I>(ui: &mut Ui, combination_type: &mut T, label: I) -> bool
-where
-    T: IntoEnumIterator + Debug + PartialEq + Copy,
-    I: Into<String>,
-{
-   let mut changed = false;
-   ComboBox::from_label(label.into().as_str())
-       .selected_text(format!("{combination_type:?}"))
-       .show_ui(ui, |ui| {
-          for variant in T::iter() {
-             if ui.selectable_value(combination_type, variant, format!("{variant:?}")).changed() { changed = true; }
-          }
-       });
+   x = x.wrapping_mul(x); // Use wrapping multiplication to prevent overflow
+   s = s.wrapping_add(W);
+   x = (x >> 32) | (x << 32);
+   x = x.wrapping_add(s);
 
-   changed
-}
-
-pub struct ToggleSwitch<'a> {
-   on_off: &'a mut bool,
-}
-
-impl<'a> ToggleSwitch<'a> {
-   pub fn new(val: &'a mut bool) -> Self {
-      Self {
-         on_off: val,
-      }
-   }
-}
-
-impl<'a> egui::Widget for ToggleSwitch<'a> {
-   fn ui(self, ui: &mut Ui) -> Response {
-      let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
-      let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
-      if response.clicked() {
-         *self.on_off = !*self.on_off;
-         response.mark_changed();
-      }
-
-      response.widget_info(|| {
-         egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), *self.on_off, "")
-      });
-
-      if ui.is_rect_visible(rect) {
-         let how_on = ui.ctx().animate_bool_responsive(response.id, *self.on_off);
-         let visuals = ui.style().interact_selectable(&response, *self.on_off);
-         let rect = rect.expand(visuals.expansion);
-         let radius = 0.5 * rect.height();
-         ui.painter()
-             .rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
-         let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
-         let center = egui::pos2(circle_x, rect.center().y);
-         ui.painter()
-             .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
-      }
-
-      response
-   }
+   // Normalize to a floating-point number between 0 and 1
+   (x as f64) / (u64::MAX as f64)
 }

@@ -4,9 +4,10 @@ use eframe::{App, CreationContext, Frame, Storage};
 use eframe::epaint::Rgba;
 use egui::{CentralPanel, Context, Visuals};
 use egui_wgpu::RenderState;
+
+use crate::{get_mut, set_none_static};
 use crate::graph_editor::graph_editor::GraphEditor;
 use crate::path_tracer::path_trace_renderer::PathTracerRenderer;
-use crate::{get_mut, set_none_static};
 use crate::singletons::settings::{SETTINGS, Settings};
 use crate::singletons::time_package::TIME;
 use crate::user_interface::ui::UiState;

@@ -14,6 +14,7 @@ pub mod global_utility {
 
 pub mod user_interface {
    pub mod ui;
+   pub mod ui_modules;
 }
 
 pub mod singletons {
