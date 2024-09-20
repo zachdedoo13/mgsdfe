@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use eframe::{CreationContext, Storage};
-use egui::{CentralPanel, ComboBox, FontId, Response, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
+use egui::{CentralPanel, ComboBox, FontId, Hyperlink, Response, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
 use egui_plot::{Line, Plot};
 use serde_json::{from_str, to_string};
 use strum::IntoEnumIterator;
@@ -231,8 +231,41 @@ impl MgsApp {
       // theme
       ui.group(|ui| {
          ui.label("Theme");
-         if enum_combination_box(ui, &mut settings.theme, "") { settings.theme.set_theme(ui.ctx()) };
+         if enum_combination_box(ui, &mut settings.theme, "Theme") { settings.theme.set_theme(ui.ctx()) };
       });
+
+      // present mode
+      {
+         #[cfg(target_arch = "wasm32")]
+         {
+            ui.group(|ui| {
+               ui.label("Changing present mode is unsupported on web")
+            })
+         }
+
+         #[cfg(not(target_arch = "wasm32"))]
+         {
+            ui.group(|ui| {
+               ui.horizontal(|ui| {
+                  ui.label("Present mode");
+                  ui.menu_button("?", |ui| {
+                     ui.add(Hyperlink::new("https://docs.rs/wgpu/latest/wgpu/enum.PresentMode.html"));
+                  });
+               });
+               // enum_combination_box(ui, &mut settings.present_mode_settings.present_mode, "Present mode");
+               //
+               // if settings.present_mode_settings.changed {
+               //    ui.label("Restart to change");
+               //    if ui.button("Restart button").clicked() {
+               //       self.restart_queued = true;
+               //    }
+               // }
+            });
+         }
+      }
+
+
+
    }
 
    fn image_render_settings(&mut self, ui: &mut Ui) {

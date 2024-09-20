@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use wgpu::{Adapter, DeviceDescriptor, Features, Limits};
+use wgpu::{Adapter, DeviceDescriptor, Features, Limits, PresentMode};
+use common::get;
+use common::singletons::settings::SETTINGS;
 
 /// Native
 #[cfg(not(target_arch = "wasm32"))]
@@ -23,7 +25,7 @@ fn main() -> eframe::Result {
    let native_options = eframe::NativeOptions {
       vsync: false,
       wgpu_options: WgpuConfiguration {
-         present_mode: wgpu::PresentMode::Immediate,
+         present_mode: PresentMode::Immediate,
          power_preference: wgpu::PowerPreference::HighPerformance,
          device_descriptor: device_descriptor_fn,
          ..Default::default()

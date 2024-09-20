@@ -479,11 +479,13 @@ dependencies = [
  "bytemuck",
  "catppuccin-egui",
  "eframe",
+ "egui-wgpu",
  "instant",
  "once_cell",
  "serde",
  "serde_json",
  "strum",
+ "wgpu",
 ]
 
 [[package]]
