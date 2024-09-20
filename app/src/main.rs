@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use wgpu::{Adapter, DeviceDescriptor, Features, Limits, PresentMode};
-use common::get;
-use common::singletons::settings::SETTINGS;
 
 /// Native
 #[cfg(not(target_arch = "wasm32"))]
