@@ -65,8 +65,6 @@ impl App for MgsApp {
       self.graph_editor.save(storage);
       self.ui_state.save(storage);
       get_mut!(SETTINGS).save(storage);
-
-      println!("TEST PRINT !!!");
    }
 
    fn on_exit(&mut self) {}
