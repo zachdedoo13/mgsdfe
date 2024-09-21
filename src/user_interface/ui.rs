@@ -236,14 +236,6 @@ impl MgsApp {
              .show(ui, |plot_ui| plot_ui.line(line));
       });
 
-      // gpu profile graph
-      if cfg!(not(target_arch = "wasm32")) {
-
-      }
-      else {
-
-      }
-
       ui.group(|ui| {
          if cfg!(not(target_arch = "wasm32")) {
             let gpu_set = &mut graph_set.gpu_profiler_graph_settings;

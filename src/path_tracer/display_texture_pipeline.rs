@@ -1,6 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineCompilationOptions, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
+
 use crate::gpu_profile_section;
 use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
 use crate::path_tracer::render_utility::helper_structs::{EguiTexturePackage, f32_to_extent, UniformFactory};
@@ -96,11 +97,7 @@ impl DisplayTexture {
    }
 
    pub fn render_pass(&self, encoder: &mut CommandEncoder, read_bindgroup: &BindGroup, gpu_profiler: &mut GpuProfiler) {
-      gpu_profile_section!(gpu_profiler, encoder, "DISPLAY_PASS", {
-
-
-
-      {
+      gpu_profile_section!(gpu_profiler, encoder, "SUB_DISPLAY_PASS", {
          let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[
@@ -133,10 +130,7 @@ impl DisplayTexture {
          render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
 
          render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
-      }
-
-         });
-
+      });
    }
 }
 

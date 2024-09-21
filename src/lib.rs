@@ -1,8 +1,14 @@
 #![allow(special_module_name)] // to stop main as library warning
+#![allow(
+   clippy::new_without_default,
+   clippy::derivable_impls,
+   clippy::ptr_arg,
+   clippy::module_inception,
+)]
 
-pub mod app;
 pub use app::MgsApp;
 
+pub mod app;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 

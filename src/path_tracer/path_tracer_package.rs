@@ -62,7 +62,7 @@ impl PathTracerPackage {
    }
 
    pub fn render_pass(&mut self, encoder: &mut CommandEncoder, gpu_profiler: &mut GpuProfiler) {
-      gpu_profile_section!(gpu_profiler, encoder, "PATHTRACE_PASS", {
+      gpu_profile_section!(gpu_profiler, encoder, "SUB_PATHTRACE_PASS", {
          let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
             label: Some("path_tracer_pipeline"),
             timestamp_writes: None,

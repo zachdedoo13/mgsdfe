@@ -125,7 +125,7 @@ impl GpuProfiler {
    }
 
    fn read_data(&mut self, queue: &Queue, device: &Device) -> Vec<(String, f64)> {
-      let timeings: Vec<u64> = read_buffer_to_vec(&device, &self.cpu_buffer).expect("failed to read data");
+      let timeings: Vec<u64> = read_buffer_to_vec(device, &self.cpu_buffer).expect("failed to read data");
       let period = queue.get_timestamp_period() as f64;
 
       let mut out = vec![];
