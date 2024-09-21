@@ -341,14 +341,10 @@ impl MgsApp {
 
             ui.add(DragValue::new(&mut z).speed(0.001).range(lower..=upper).suffix("%"));
 
-            if ui.button("+").clicked() {
-               z += step;
-            }
+            if ui.button("+").clicked() { z += step; }
 
             ui.add_space(5.0);
-            if ui.button("🔄").clicked() {
-               z = 1.0;
-            }
+            if ui.button("🔄").clicked() { z = 1.0; }
 
 
             if z < lower {
