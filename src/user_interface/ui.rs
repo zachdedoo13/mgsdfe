@@ -180,6 +180,8 @@ impl MgsApp {
    }
 }
 
+static mut TEST_THEME: catppuccin_egui::Theme = catppuccin_egui::MACCHIATO;
+
 /// sub areas
 impl MgsApp {
    fn stats(&mut self, ui: &mut Ui) {
@@ -274,6 +276,11 @@ impl MgsApp {
       ui.group(|ui| {
          ui.label("Theme");
          if enum_combination_box(ui, &mut settings.theme, "Theme") { settings.theme.set_theme(ui.ctx()) };
+
+         unsafe {
+            theme_color_picker(ui, &mut TEST_THEME);
+            catppuccin_egui::set_theme(ui.ctx(), TEST_THEME);
+         }
       });
       ui.add_space(10.0);
 
@@ -400,4 +407,34 @@ fn random_number(seed: u32) -> f64 {
 
    // Normalize to a floating-point number between 0 and 1
    (x as f64) / (u64::MAX as f64)
+}
+
+
+pub fn theme_color_picker(ui: &mut Ui, theme: &mut catppuccin_egui::Theme) {
+   ui.color_edit_button_srgba(&mut theme.rosewater);
+   ui.color_edit_button_srgba(&mut theme.flamingo);
+   ui.color_edit_button_srgba(&mut theme.pink);
+   ui.color_edit_button_srgba(&mut theme.mauve);
+   ui.color_edit_button_srgba(&mut theme.red);
+   ui.color_edit_button_srgba(&mut theme.maroon);
+   ui.color_edit_button_srgba(&mut theme.peach);
+   ui.color_edit_button_srgba(&mut theme.yellow);
+   ui.color_edit_button_srgba(&mut theme.green);
+   ui.color_edit_button_srgba(&mut theme.teal);
+   ui.color_edit_button_srgba(&mut theme.sky);
+   ui.color_edit_button_srgba(&mut theme.sapphire);
+   ui.color_edit_button_srgba(&mut theme.blue);
+   ui.color_edit_button_srgba(&mut theme.lavender);
+   ui.color_edit_button_srgba(&mut theme.text);
+   ui.color_edit_button_srgba(&mut theme.subtext1);
+   ui.color_edit_button_srgba(&mut theme.subtext0);
+   ui.color_edit_button_srgba(&mut theme.overlay2);
+   ui.color_edit_button_srgba(&mut theme.overlay1);
+   ui.color_edit_button_srgba(&mut theme.overlay0);
+   ui.color_edit_button_srgba(&mut theme.surface2);
+   ui.color_edit_button_srgba(&mut theme.surface1);
+   ui.color_edit_button_srgba(&mut theme.surface0);
+   ui.color_edit_button_srgba(&mut theme.base);
+   ui.color_edit_button_srgba(&mut theme.mantle);
+   ui.color_edit_button_srgba(&mut theme.crust);
 }

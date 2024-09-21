@@ -69,6 +69,7 @@ pub enum Theme {
    Frappe,
    Macchiato,
    Mocha,
+   Oled,
 }
 
 impl Theme {
@@ -80,6 +81,7 @@ impl Theme {
          Theme::Frappe => catppuccin_egui::set_theme(ctx, FRAPPE),
          Theme::Macchiato => catppuccin_egui::set_theme(ctx, MACCHIATO),
          Theme::Mocha => catppuccin_egui::set_theme(ctx, MOCHA),
+         Theme::Oled => { todo!() },
       };
    }
 }
