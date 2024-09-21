@@ -104,6 +104,7 @@ fn restart_app() {
 
 #[cfg(target_arch = "wasm32")]
 fn restart_app() {
+   // todo doesn't work
    use wasm_bindgen::prelude::*;
    #[wasm_bindgen]
    extern "C" {

@@ -44,7 +44,8 @@ fn fs_main(
         color = vec3<f32>(0.0, 0.0, 0.0); // default case
     }
 
-    // i could change this to useing native samplers if i edit the storage texture package to include a texture binging aswell as read/write
+    // i could change this to useing native samplers if i edit
+    // the storage texture package to include a texture binging aswell as read/write
     // then have the sampler in display_texture_pipeline
 
 
