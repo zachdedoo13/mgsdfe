@@ -24,7 +24,8 @@ impl PathTracerPackage {
 
       let storage_textures = DualStorageTexturePackage::new(device);
 
-      let shader_module = load_shader(device, &String::new()).expect("Failed to load shader"); // todo placeholder
+      // todo placeholder
+      let shader_module = load_shader(device, &String::new()).expect("Failed to load shader");
 
       let uniform = UniformFactory::new(device, parthtracer_settings);
 
