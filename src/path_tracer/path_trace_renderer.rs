@@ -5,11 +5,12 @@ use eframe::emath::{Rect, Vec2};
 use egui::{Button, Image, Pos2, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
-use wgpu::{BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, QuerySetDescriptor, QueryType};
+use wgpu::{CommandEncoderDescriptor, Extent3d};
 
-use crate::{get, get_mut_ref};
+use crate::{get, get_mut_ref, gpu_profile_section};
 use crate::path_tracer::display_texture_pipeline::DisplayTexture;
 use crate::path_tracer::path_tracer_package::PathTracerPackage;
+use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
 use crate::singletons::settings::SETTINGS;
 use crate::singletons::time_package::TIME;
 
@@ -18,6 +19,9 @@ pub struct PathTracerRenderer {
    display_texture: DisplayTexture,
 
    queue_pipeline_remake: bool,
+
+   pub do_gpu_profiling: bool,
+   pub gpu_profiler: GpuProfiler,
 }
 
 impl PathTracerRenderer {
@@ -31,10 +35,20 @@ impl PathTracerRenderer {
       let display_texture =
           DisplayTexture::new(render_state, path_tracer_package.storage_textures.read_layout(), &settings.image_size_settings);
 
+
+      let gpu_profiler = GpuProfiler::new(&render_state.device, 6);
+
+      let do_gpu_profiling = cfg!(not(target_arch = "wasm32"));
+
       Self {
          path_tracer_package,
          display_texture,
+
          queue_pipeline_remake: false,
+
+         do_gpu_profiling,
+
+         gpu_profiler,
       }
    }
 
@@ -48,6 +62,16 @@ impl PathTracerRenderer {
       if self.queue_pipeline_remake {
          self.path_tracer_package.remake_pipeline(&render_state.device);
          self.queue_pipeline_remake = false;
+      }
+
+      {
+         #[cfg(not(target_arch = "wasm32"))]
+         { self.gpu_profiler.active = self.do_gpu_profiling; }
+
+         #[cfg(target_arch = "wasm32")]
+         { self.gpu_profiler.active = false; self.do_gpu_profiling = false; }
+
+         self.gpu_profiler.update(&render_state.queue, &render_state.device);
       }
 
       // update scene
@@ -120,78 +144,24 @@ impl PathTracerRenderer {
    fn handle_input(&mut self, _ui: &mut Ui, _response: &Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
-      // todo slow move into a struct
-
-      let count = 2;
-
-      let query_set = render_state.device.create_query_set(&QuerySetDescriptor {
-         label: Some("Timestamp query"),
-         ty: QueryType::Timestamp,
-         count,
-      });
-
-      let buffer_size = 8 * count as u64;
-
-      let query_buffer = render_state.device.create_buffer(&BufferDescriptor {
-         label: Some("query_buffer"),
-         size: buffer_size,
-         usage: BufferUsages::QUERY_RESOLVE |
-             BufferUsages::STORAGE |
-             BufferUsages::COPY_DST |
-             BufferUsages::COPY_SRC,
-         mapped_at_creation: false,
-      });
-
-      let cpu_buffer = render_state.device.create_buffer(&BufferDescriptor {
-         label: Some("query_buffer"),
-         size: buffer_size,
-         usage: BufferUsages::MAP_READ | BufferUsages::COPY_DST,
-         mapped_at_creation: false,
-      });
-
-
       let mut encoder = render_state.device.create_command_encoder(&CommandEncoderDescriptor {
          label: Some("Render Encoder"),
       });
 
-      encoder.write_timestamp(&query_set, 0);
+      gpu_profile_section!(self.gpu_profiler, &mut encoder, "MAIN_RENDER_PASS", {
 
-      {
-         self.path_tracer_package.render_pass(&mut encoder);
-         self.display_texture.render_pass(&mut encoder, &self.path_tracer_package.storage_textures.textures.item_one().read_bind_group);
-      }
+         self.path_tracer_package.render_pass(&mut encoder, &mut self.gpu_profiler);
 
-      encoder.write_timestamp(&query_set, 1);
+         self.display_texture.render_pass(&mut encoder,
+            &self.path_tracer_package.storage_textures.textures.item_one().read_bind_group,
+            &mut self.gpu_profiler
+         );
 
-      encoder.resolve_query_set(&query_set, 0..count, &query_buffer, 0);
+      });
 
-      encoder.copy_buffer_to_buffer(&query_buffer, 0, &cpu_buffer, 0, buffer_size);
+      self.gpu_profiler.resolve(&mut encoder, &render_state.device);
 
       render_state.queue.submit(iter::once(encoder.finish()));
-
-
-      // read
-      let buffer_slice = cpu_buffer.slice(..);
-      let (sender, receiver) = flume::bounded(1);
-      buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-
-      render_state.device.poll(wgpu::Maintain::wait()).panic_on_timeout();
-
-      let future = receiver.recv_async();
-
-      if let Ok(Ok(())) = pollster::block_on(future) {
-         let data = buffer_slice.get_mapped_range();
-         let result: Vec<u64> = bytemuck::cast_slice(&data).to_vec();
-         let period = render_state.queue.get_timestamp_period() as f64;
-
-         let elapsed_ns = (result[1] - result[0]) as f64 * period;
-
-         println!("Time => {elapsed_ns}ns");
-
-
-         drop(data);
-         cpu_buffer.unmap();
-      }
    }
 }
 

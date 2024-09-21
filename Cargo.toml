@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 name = "app_bin"
 path = "src/native.rs"
 
+
 [profile.release]
 opt-level = 3
 lto = "fat"

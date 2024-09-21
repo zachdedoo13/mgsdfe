@@ -79,7 +79,7 @@ macro_rules! set_none_static {
 }
 
 
-/// is timer
+/// simple cpu timer
 #[macro_export]
 macro_rules! timer {
     ($code: block) => {{
@@ -95,4 +95,18 @@ macro_rules! timer {
         println!("{} -> {:?}", $name, st.elapsed());
         out
     }};
+}
+
+
+/// helper macro for ``GpuProfiler``
+/// ``gpu_profile_section!(self.gpu_profiler, encoder, "MAIN_RENDER_PASS", {});``
+#[macro_export]
+macro_rules! gpu_profile_section {
+    ($profiler: expr, $encoder: expr, $key: literal, $code: block) => {
+        $profiler.start_timer($encoder, $key);
+
+        $code
+
+        $profiler.end_timer($encoder, $key);
+    };
 }

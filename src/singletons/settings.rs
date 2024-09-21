@@ -129,23 +129,30 @@ pub enum SamplingType {
 ////////////////////
 #[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
 pub struct GraphSettings {
-   pub fps_graph_settings: FpsGraphSettings,
+   pub fps_graph_settings: GeneralGraphOptions,
+   pub gpu_profiler_graph_settings: GeneralGraphOptions,
 }
 
 impl Default for GraphSettings {
    fn default() -> Self {
       Self {
-         fps_graph_settings: FpsGraphSettings {
+         fps_graph_settings: GeneralGraphOptions {
             include_upper: 200.0,
             update_rate: 0.25,
             amount: 100,
-         }
+         },
+
+         gpu_profiler_graph_settings: GeneralGraphOptions {
+            include_upper: 1.0,
+            update_rate: 0.25,
+            amount: 50,
+         },
       }
    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
-pub struct FpsGraphSettings {
+pub struct GeneralGraphOptions {
    pub include_upper: f32,
    pub update_rate: f64,
    pub amount: usize,

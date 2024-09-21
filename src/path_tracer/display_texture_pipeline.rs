@@ -1,6 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineCompilationOptions, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
+use crate::gpu_profile_section;
+use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
 use crate::path_tracer::render_utility::helper_structs::{EguiTexturePackage, f32_to_extent, UniformFactory};
 use crate::path_tracer::render_utility::vertex_library::{SQUARE_INDICES, SQUARE_VERTICES};
 use crate::path_tracer::render_utility::vertex_package::{Vertex, VertexPackage};
@@ -93,39 +95,48 @@ impl DisplayTexture {
       self.uniform.update_with_data(&render_state.queue, &DisplaySettings::from_settings(iss))
    }
 
-   pub fn render_pass(&self, encoder: &mut CommandEncoder, read_bindgroup: &BindGroup) {
-      let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-         label: Some("Render Pass"),
-         color_attachments: &[
-            // This is what @location(0) in the fragment shader targets
-            Some(wgpu::RenderPassColorAttachment {
-               view: &self.texture.view,
-               resolve_target: None,
-               ops: wgpu::Operations {
-                  load: wgpu::LoadOp::Clear(Color {
-                     r: 0.0,
-                     g: 0.0,
-                     b: 0.0,
-                     a: 1.0,
-                  }),
-                  store: wgpu::StoreOp::Store,
-               },
-            })
-         ],
-         depth_stencil_attachment: None,
-         occlusion_query_set: None,
-         timestamp_writes: None,
-      });
+   pub fn render_pass(&self, encoder: &mut CommandEncoder, read_bindgroup: &BindGroup, gpu_profiler: &mut GpuProfiler) {
+      gpu_profile_section!(gpu_profiler, encoder, "DISPLAY_PASS", {
 
-      render_pass.set_pipeline(&self.pipeline);
 
-      render_pass.set_bind_group(0, read_bindgroup, &[]);
-      render_pass.set_bind_group(1, &self.uniform.bind_group, &[]);
 
-      render_pass.set_vertex_buffer(0, self.vertex_package.vertex_buffer.slice(..));
-      render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
+      {
+         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Render Pass"),
+            color_attachments: &[
+               // This is what @location(0) in the fragment shader targets
+               Some(wgpu::RenderPassColorAttachment {
+                  view: &self.texture.view,
+                  resolve_target: None,
+                  ops: wgpu::Operations {
+                     load: wgpu::LoadOp::Clear(Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                     }),
+                     store: wgpu::StoreOp::Store,
+                  },
+               })
+            ],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+         });
 
-      render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
+         render_pass.set_pipeline(&self.pipeline);
+
+         render_pass.set_bind_group(0, read_bindgroup, &[]);
+         render_pass.set_bind_group(1, &self.uniform.bind_group, &[]);
+
+         render_pass.set_vertex_buffer(0, self.vertex_package.vertex_buffer.slice(..));
+         render_pass.set_index_buffer(self.vertex_package.index_buffer.slice(..), IndexFormat::Uint16);
+
+         render_pass.draw_indexed(0..self.vertex_package.num_indices, 0, 0..1);
+      }
+
+         });
+
    }
 }
 

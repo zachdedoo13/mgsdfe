@@ -6,7 +6,9 @@ use egui_wgpu::RenderState;
 use log::error;
 use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu::naga::{FastHashMap, ShaderStage};
+use crate::gpu_profile_section;
 use crate::path_tracer::render_utility::dual_storage_texture_package::DualStorageTexturePackage;
+use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
 use crate::path_tracer::render_utility::helper_structs::UniformFactory;
 use crate::singletons::scene::ParthtracerSettings;
 
@@ -59,8 +61,8 @@ impl PathTracerPackage {
       self.uniform.update_with_data(&render_state.queue, &settings);
    }
 
-   pub fn render_pass(&mut self, encoder: &mut CommandEncoder) {
-      {
+   pub fn render_pass(&mut self, encoder: &mut CommandEncoder, gpu_profiler: &mut GpuProfiler) {
+      gpu_profile_section!(gpu_profiler, encoder, "PATHTRACE_PASS", {
          let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
             label: Some("path_tracer_pipeline"),
             timestamp_writes: None,
@@ -80,7 +82,7 @@ impl PathTracerPackage {
             (size.height as f32 / wg as f32).ceil() as u32,
             1,
          );
-      }
+      });
 
       // Perform the flip after the immutable borrows are done
       self.storage_textures.textures.flip();

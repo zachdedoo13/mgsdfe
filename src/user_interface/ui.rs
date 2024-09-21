@@ -1,6 +1,6 @@
 use eframe::{CreationContext, Storage};
 use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
-use egui_plot::{Legend, Line, Plot};
+use egui_plot::{Corner, Legend, Line, Plot};
 use serde_json::{from_str, to_string};
 
 use crate::{get, get_mut, get_mut_ref};
@@ -186,13 +186,18 @@ impl MgsApp {
 impl MgsApp {
    fn stats(&mut self, ui: &mut Ui) {
       get_mut_ref!(SETTINGS, settings);
+      let graph_set = &mut settings.graph_settings;
+
       let mw = per_width(ui, 0.25);
       ui.set_max_width(mw);
 
 
+      const DEF_WIDTH: f32 = 600.0;
+      const DEF_HEIGHT: f32 = 400.0;
+
+
       // fps graph
       ui.group(|ui| {
-         let graph_set = &mut settings.graph_settings;
          let fps_graph_set = &mut graph_set.fps_graph_settings;
 
 
@@ -216,9 +221,11 @@ impl MgsApp {
 
          let data = get!(TIME).fps_graphing.clone();
 
-         let line = Line::new(data);
+         let line = Line::new(data).fill(0.0);
          Plot::new("my_plot")
              .view_aspect(2.0)
+             .height(DEF_HEIGHT)
+             .width(DEF_WIDTH)
              .allow_drag(false)
              .allow_scroll(false)
              .allow_zoom(false)
@@ -229,44 +236,84 @@ impl MgsApp {
              .show(ui, |plot_ui| plot_ui.line(line));
       });
 
-      // test graph
+      // gpu profile graph
+      if cfg!(not(target_arch = "wasm32")) {
+
+      }
+      else {
+
+      }
+
       ui.group(|ui| {
-         let mut data_one = vec![];
-         let mut refrence = 20.0;
-         for i in 0..100 {
-            data_one.push([i as f64, refrence]);
-            refrence += (random_number(i) - 0.5) * 2.0;
-         }
-         let line_one = Line::new(data_one)
-             .fill(0.0)
-             .name("One")
-             ;
+         if cfg!(not(target_arch = "wasm32")) {
+            let gpu_set = &mut graph_set.gpu_profiler_graph_settings;
+            let gpu_profiler = &mut self.path_tracer.gpu_profiler;
 
-         let mut data_two = vec![];
-         let mut refrence = 10.0;
-         for i in 0..100 {
-            data_two.push([i as f64, refrence]);
-            refrence += (random_number(i) - 0.5) * 2.0;
-         }
-         let line_two = Line::new(data_two)
-             .fill(0.0)
-             .name("Two");
+            gpu_profiler.amount = gpu_set.amount as u32;
+            gpu_profiler.update_interval = 1.0 - gpu_set.update_rate;
 
-         Plot::new("test_plot")
-             .view_aspect(2.0)
-             .allow_drag(false)
-             .allow_scroll(false)
-             .allow_zoom(false)
-             .allow_boxed_zoom(false)
-             .include_y(0.0)
-             .include_y(0.0)
-             .show_axes(Vec2b::new(false, true))
-             .legend(Legend::default())
-             .show(ui, |plot_ui| {
-                plot_ui.line(line_one);
-                plot_ui.line(line_two);
-             });
+            ui.horizontal(|ui| {
+               ui.heading("Gpu performance profile");
+
+               ui.menu_button("...", |ui| {
+                  if ui.button("Clear").clicked() { gpu_profiler.timers.iter_mut().for_each(|e| e.1.time_graphing.clear()) };
+
+                  ui.add(Slider::new(&mut gpu_set.update_rate, 0.01..=0.99).text("Update rate"));
+
+                  ui.add(Slider::new(&mut gpu_set.amount, 10..=500).text("Graph amount"));
+
+                  ui.add(Slider::new(&mut gpu_set.include_upper, 0.0..=5.0).text("Include at least"));
+
+                  ui.add(Slider::new(&mut gpu_profiler.max_cash, 1..=50).text("Max cash, adjust for performance"));
+               });
+
+               ui.add_space(10.0);
+               ui.add(ToggleSwitch::new(&mut self.path_tracer.do_gpu_profiling));
+               ui.label("Active")
+            });
+
+
+            let mut data_entry = vec![];
+            for e in gpu_profiler.timers.iter() {
+               let data = &e.1.time_graphing;
+
+               let first = data.last().unwrap_or(&[0.0, 0.0])[1];
+
+               let label = format!("{:.2}ms => {}", first, e.0);
+
+               data_entry.push(
+                  Line::new(data.clone())
+                      .name(label)
+                      .fill(0.0)
+               )
+            }
+
+
+            let plot = Plot::new("test_plot")
+                .view_aspect(2.0)
+                .height(DEF_HEIGHT)
+                .width(DEF_WIDTH)
+                .allow_drag(false)
+                .allow_scroll(false)
+                .allow_zoom(false)
+                .allow_boxed_zoom(false)
+                .include_y(0.0)
+                .include_y(gpu_set.include_upper)
+                .y_axis_label("milliseconds")
+                .show_axes(Vec2b::new(false, true))
+                .legend(Legend::default().position(Corner::LeftBottom));
+
+            plot.show(ui, |plot_ui| {
+               for line in data_entry {
+                  plot_ui.line(line);
+               }
+            });
+         }
+         else {
+            ui.label("Gpu profiler not available on web builds");
+         }
       });
+
    }
 
    fn settings_page(&mut self, ui: &mut Ui) {
@@ -394,22 +441,7 @@ fn per_width(ui: &mut Ui, per: f32) -> f32 {
    ui.ctx().screen_rect().width() * per
 }
 
-fn random_number(seed: u32) -> f64 {
-   // Constants for the Middle Square Weyl Sequence (MSWS)
-   const W: u64 = 0xb5ad4eceda1ce2a9;
-   let mut x = (seed as u64).wrapping_add(W);
-   let mut s: u64 = 0;
-
-   x = x.wrapping_mul(x); // Use wrapping multiplication to prevent overflow
-   s = s.wrapping_add(W);
-   x = (x >> 32) | (x << 32);
-   x = x.wrapping_add(s);
-
-   // Normalize to a floating-point number between 0 and 1
-   (x as f64) / (u64::MAX as f64)
-}
-
-
+#[allow(dead_code)]
 pub fn theme_color_picker(ui: &mut Ui, theme: &mut catppuccin_egui::Theme) {
    ui.color_edit_button_srgba(&mut theme.rosewater);
    ui.color_edit_button_srgba(&mut theme.flamingo);
