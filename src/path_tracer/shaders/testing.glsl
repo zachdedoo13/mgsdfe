@@ -357,7 +357,7 @@ void main() {
     // setup
     Ray ray = Ray(
     vec3(s.pos_x, s.pos_y, s.pos_z),
-    normalize(vec3(uv, 1.0))
+    normalize(vec3(uv, s.fov))
     );
 
     // Usage
