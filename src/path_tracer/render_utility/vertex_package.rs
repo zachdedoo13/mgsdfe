@@ -1,3 +1,4 @@
+use std::mem::size_of;
 use bytemuck::{Pod, Zeroable};
 use wgpu::{Buffer, Device};
 use wgpu::util::DeviceExt;

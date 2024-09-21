@@ -180,7 +180,7 @@ impl MgsApp {
    }
 }
 
-static mut TEST_THEME: catppuccin_egui::Theme = catppuccin_egui::MACCHIATO;
+// static mut TEST_THEME: catppuccin_egui::Theme = catppuccin_egui::MACCHIATO;
 
 /// sub areas
 impl MgsApp {
@@ -277,10 +277,10 @@ impl MgsApp {
          ui.label("Theme");
          if enum_combination_box(ui, &mut settings.theme, "Theme") { settings.theme.set_theme(ui.ctx()) };
 
-         unsafe {
-            theme_color_picker(ui, &mut TEST_THEME);
-            catppuccin_egui::set_theme(ui.ctx(), TEST_THEME);
-         }
+         // unsafe {
+         //    theme_color_picker(ui, &mut TEST_THEME);
+         //    catppuccin_egui::set_theme(ui.ctx(), TEST_THEME);
+         // }
       });
       ui.add_space(10.0);
 

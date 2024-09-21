@@ -120,6 +120,8 @@ impl PathTracerRenderer {
    fn handle_input(&mut self, _ui: &mut Ui, _response: &Response) {}
 
    fn render_pass(&mut self, render_state: &RenderState) {
+      // todo slow move into a struct
+
       let count = 2;
 
       let query_set = render_state.device.create_query_set(&QuerySetDescriptor {
@@ -152,28 +154,44 @@ impl PathTracerRenderer {
          label: Some("Render Encoder"),
       });
 
-      // encoder.write_timestamp(&query_set, 0);
+      encoder.write_timestamp(&query_set, 0);
 
       {
          self.path_tracer_package.render_pass(&mut encoder);
          self.display_texture.render_pass(&mut encoder, &self.path_tracer_package.storage_textures.textures.item_one().read_bind_group);
       }
-      //
-      // encoder.write_timestamp(&query_set, 1);
-      //
-      // encoder.resolve_query_set(&query_set, 0..count, &query_buffer, 0);
-      //
-      // encoder.copy_buffer_to_buffer(&query_buffer, 0, &cpu_buffer, 0, buffer_size);
+
+      encoder.write_timestamp(&query_set, 1);
+
+      encoder.resolve_query_set(&query_set, 0..count, &query_buffer, 0);
+
+      encoder.copy_buffer_to_buffer(&query_buffer, 0, &cpu_buffer, 0, buffer_size);
 
       render_state.queue.submit(iter::once(encoder.finish()));
 
 
       // read
-      // let buffer_slice = cpu_buffer.slice(..);
-      // // let (sender, receiver) = flume::bounded(1);
-      // // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-      //
-      // render_state.device.poll(wgpu::Maintain::wait()).panic_on_timeout();
+      let buffer_slice = cpu_buffer.slice(..);
+      let (sender, receiver) = flume::bounded(1);
+      buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+
+      render_state.device.poll(wgpu::Maintain::wait()).panic_on_timeout();
+
+      let future = receiver.recv_async();
+
+      if let Ok(Ok(())) = pollster::block_on(future) {
+         let data = buffer_slice.get_mapped_range();
+         let result: Vec<u64> = bytemuck::cast_slice(&data).to_vec();
+         let period = render_state.queue.get_timestamp_period() as f64;
+
+         let elapsed_ns = (result[1] - result[0]) as f64 * period;
+
+         println!("Time => {elapsed_ns}ns");
+
+
+         drop(data);
+         cpu_buffer.unmap();
+      }
    }
 }
 

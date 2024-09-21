@@ -36,5 +36,6 @@ pub mod path_tracer {
       pub mod helper_structs;
       pub mod vertex_package;
       pub mod vertex_library;
+      pub mod gpu_profiler;
    }
 }
