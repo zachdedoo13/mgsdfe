@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use log::error;
 
 use wgpu::{Adapter, DeviceDescriptor, Features, Limits, PresentMode};
 
