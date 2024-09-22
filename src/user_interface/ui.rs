@@ -236,6 +236,7 @@ impl MgsApp {
              .show(ui, |plot_ui| plot_ui.line(line));
       });
 
+      // gpu profiler graph
       ui.group(|ui| {
          if cfg!(not(target_arch = "wasm32")) {
             let gpu_set = &mut graph_set.gpu_profiler_graph_settings;
@@ -254,9 +255,9 @@ impl MgsApp {
 
                   ui.add(Slider::new(&mut gpu_set.amount, 10..=500).text("Graph amount"));
 
-                  ui.add(Slider::new(&mut gpu_set.include_upper, 0.0..=5.0).text("Include at least"));
+                  ui.add(Slider::new(&mut gpu_set.include_upper, 0.0..=10.0).text("Include at least"));
 
-                  ui.add(Slider::new(&mut gpu_profiler.max_cash, 1..=50).text("Max cash, adjust for performance"));
+                  ui.add(Slider::new(&mut gpu_profiler.max_cash, 1..=50).text("Average sample smoothing"));
                });
 
                ui.add_space(10.0);
@@ -266,18 +267,20 @@ impl MgsApp {
 
 
             let mut data_entry = vec![];
+            let mut timeings = vec![];
             for e in gpu_profiler.timers.iter() {
                let data = &e.1.time_graphing;
 
                let first = data.last().unwrap_or(&[0.0, 0.0])[1];
 
-               let label = format!("{:.2}ms => {}", first, e.0);
+               let label_with_timings = format!("{:.2}ms => {}", first, e.0);
+               timeings.push(label_with_timings);
 
                data_entry.push(
-                  Line::new(data.clone())
-                      .name(label)
-                      .fill(0.0)
-               )
+                     Line::new(data.clone())
+                         .name(e.0.clone())
+                         .fill(0.0),
+               );
             }
 
 
@@ -300,6 +303,13 @@ impl MgsApp {
                   plot_ui.line(line);
                }
             });
+
+            CollapsingHeader::new("Timings")
+                .show(ui, |ui| {
+                   for timing in timeings {
+                      ui.label(timing);
+                   }
+                });
          }
          else {
             ui.label("Gpu profiler not available on web builds");

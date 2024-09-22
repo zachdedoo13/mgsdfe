@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use std::mem::size_of;
+
 use bytemuck::{bytes_of, Pod, Zeroable};
 use eframe::epaint::TextureId;
 use egui_wgpu::RenderState;
@@ -37,7 +38,6 @@ impl<T> Flipper<T> {
       self.active = !self.active;
    }
 }
-
 
 pub struct EguiTexturePackage {
    pub texture: Texture,
@@ -110,9 +110,11 @@ pub fn extent_to_f32(extent3d: &Extent3d) -> (f32, f32) {
 }
 
 
-
 pub trait UniformType: Pod + Copy + Clone + Zeroable {} // type alias for these things
 impl<T: Pod + Copy + Clone + Zeroable> UniformType for T {} // implements uniform type for types with these traits
+
+/// makes a uniform of type ``T`` but doesn't hold the data in type ``T`` just takes a
+/// reference in methods
 pub struct UniformFactory<T: UniformType> {
    pub bind_group: BindGroup,
    pub layout: BindGroupLayout,
@@ -121,6 +123,7 @@ pub struct UniformFactory<T: UniformType> {
 }
 
 impl<T: UniformType> UniformFactory<T> {
+   /// init with a reference to type ``T``
    pub fn new(device: &Device, data: &T) -> Self {
       let buffer = device.create_buffer_init(&BufferInitDescriptor {
          label: Some("PathTracerUniform"),
@@ -161,6 +164,7 @@ impl<T: UniformType> UniformFactory<T> {
       }
    }
 
+   /// updates with a reference to type ``T``
    pub fn update_with_data(&self, queue: &Queue, data: &T) {
       queue.write_buffer(
          &self.buffer,

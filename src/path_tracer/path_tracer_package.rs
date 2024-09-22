@@ -6,6 +6,7 @@ use egui_wgpu::RenderState;
 use log::error;
 use wgpu::{CommandEncoder, ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu::naga::{FastHashMap, ShaderStage};
+
 use crate::gpu_profile_section;
 use crate::path_tracer::render_utility::dual_storage_texture_package::DualStorageTexturePackage;
 use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
@@ -84,7 +85,18 @@ impl PathTracerPackage {
          );
       });
 
-      // Perform the flip after the immutable borrows are done
+      #[allow(unused_braces)]
+      let _c =
+          {
+             {
+                {
+                   { { { { { { { { { { { { { [[[[[[[[[[(((((((((((((( /* bean */ ))))))))))))))]]]]]]]]]] } } } } } } } } } } } } }
+                }
+             }
+          };
+
+
+      // Perform the flip after the immutable borrows are done, idk why
       self.storage_textures.textures.flip();
    }
 
