@@ -1,0 +1,12 @@
+[package]
+name = "performance_profiler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+performance_code = { path = "../performance_code" }
+per_macros = { path = "../per_macros"}
+
+[dev-dependencies]
+eframe = { version = "0.28.1", features = ["wgpu"] }
+egui_plot = "0.28.1"

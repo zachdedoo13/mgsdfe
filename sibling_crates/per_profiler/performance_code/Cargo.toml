@@ -1,0 +1,8 @@
+[package]
+name = "performance_code"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
+lazy_static = "1.5.0"

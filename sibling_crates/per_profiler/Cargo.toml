@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "performance_code",
+    "performance_profiler",
+    "per_macros",
+]
+resolver = "2"

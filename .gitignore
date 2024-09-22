@@ -1,3 +1,4 @@
 /target
 /pkg
 /pkg/.gitignore
+/sibling_crates/per_profiler/target/
