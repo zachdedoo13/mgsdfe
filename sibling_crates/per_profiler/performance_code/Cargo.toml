@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
 lazy_static = "1.5.0"
+id_tree = "1.8.0"

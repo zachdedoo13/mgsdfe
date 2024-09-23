@@ -1,9 +1,11 @@
 mod profiler;
+mod function_profile;
 pub mod dec_macros;
 
 use std::sync::RwLock;
 use lazy_static::lazy_static;
-pub use profiler::{PerformanceProfiler, FunctionProfile};
+pub use profiler::PerformanceProfiler;
+pub use function_profile::FunctionProfile;
 
 
 lazy_static! {

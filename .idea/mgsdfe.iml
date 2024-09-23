@@ -9,10 +9,10 @@
       <sourceFolder url="file://$MODULE_DIR$/common/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/graph_editor/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/path_tracer/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sibling_crates/macros/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/per_macros/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/performance_code/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/performance_profiler/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/performance_profiler/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/performance_profiler/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/graphing_stuff/target" />
@@ -25,6 +25,7 @@
       <excludeFolder url="file://$MODULE_DIR$/pkg" />
       <excludeFolder url="file://$MODULE_DIR$/sibling_crates/macros/target" />
       <excludeFolder url="file://$MODULE_DIR$/sibling_crates/per_profiler/target" />
+      <excludeFolder url="file://$MODULE_DIR$/src" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
