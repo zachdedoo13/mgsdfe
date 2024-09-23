@@ -17,9 +17,9 @@ pub fn time_function(attr: TokenStream, input: TokenStream) -> TokenStream {
     // Generate the new function body with the placeholders
     let expanded = quote! {
         #fn_sig {
-            performance_code::PROFILER.lock().unwrap().start_time_function(#name);
+            get_profiler!().start_time_function(#name);
             #fn_block
-            performance_code::PROFILER.lock().unwrap().end_time_function(#name);
+            get_profiler!().end_time_function(#name);
         }
     };
 

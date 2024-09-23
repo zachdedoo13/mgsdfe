@@ -1,4 +1,3 @@
-
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -42,16 +41,11 @@ impl DisplayExampleApp {
 }
 
 impl App for DisplayExampleApp {
-
    #[time_function("MAIN")]
    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-      let mut profiler = performance_profiler::PROFILER.lock().unwrap();
-
-      // get_profiler!().active = true;
-
       CentralPanel::default()
           .show(ctx, |ui| {
-             let lines: Vec<Line> = profiler.profiles.iter().map(|p| {
+             let lines: Vec<Line> = get_profiler!().profiles.iter().map(|p| {
                 Line::new(p.1.timeings.clone())
                     .fill(0.0)
                     .name(
@@ -77,65 +71,31 @@ impl App for DisplayExampleApp {
                     }
                  });
 
-             ui.add(DragValue::new(&mut self.main_delay).prefix("Test delay").speed(1.0));
+             ui.add(DragValue::new(&mut self.main_delay).prefix("Test main delay").speed(1.0));
           });
 
 
       sleep(Duration::from_millis(self.main_delay));
 
-      // self.test(); // dose the weird halt when called, mutex lock indication, test this gpt code
+      self.test_layer_2();
 
-//       extern crate proc_macro;
-// 
-//       use proc_macro::TokenStream;
-//       use quote::quote;
-//       use std::cell::RefCell;
-//       use syn::{parse_macro_input, ItemFn, LitStr};
-// 
-//       // Thread-local variable to track if the lock is already held by the current thread
-//       thread_local! {
-//     static LOCK_HELD: RefCell<bool> = RefCell::new(false);
-// }
-// 
-//       #[proc_macro_attribute]
-//       pub fn time_function(attr: TokenStream, input: TokenStream) -> TokenStream {
-//          // Parse the input tokens into a syntax tree
-//          let input = parse_macro_input!(input as ItemFn);
-//          let name = parse_macro_input!(attr as LitStr).value();
-// 
-//          // Get the function's identifier, signature, and block
-//          let fn_sig = &input.sig;
-//          let fn_block = &input.block;
-// 
-//          // Generate the new function body with the placeholders
-//          let expanded = quote! {
-//         #fn_sig {
-//             if !LOCK_HELD.with(|lock_held| *lock_held.borrow()) {
-//                 LOCK_HELD.with(|lock_held| *lock_held.borrow_mut() = true);
-//                 performance_code::PROFILER.lock().unwrap().start_time_function(#name);
-//                 #fn_block
-//                 performance_code::PROFILER.lock().unwrap().end_time_function(#name);
-//                 LOCK_HELD.with(|lock_held| *lock_held.borrow_mut() = false);
-//             } else {
-//                 #fn_block
-//             }
-//         }
-//     };
-
-         // Return the generated tokens
-      //    TokenStream::from(expanded)
-      // }
-
-      profiler.resolve_profiler();
+      get_profiler!().resolve_profiler();
       ctx.request_repaint();
-
-      // profiler.end_time_function("MAIN");
    }
 }
 
+
+/// test inner functions
 impl DisplayExampleApp {
-   #[time_function("TEST_SLEEP")]
-   fn test(&self) {
-      sleep(Duration::from_millis(self.main_delay));
+   #[time_function("LAYER_2")]
+   fn test_layer_2(&self) {
+      sleep(Duration::from_millis(24));
+
+      self.test_layer_3();
+   }
+
+   #[time_function("LAYER_3")]
+   fn test_layer_3(&self) {
+      sleep(Duration::from_millis(12));
    }
 }

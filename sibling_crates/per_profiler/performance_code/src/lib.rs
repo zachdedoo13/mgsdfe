@@ -1,13 +1,14 @@
 mod profiler;
 pub mod dec_macros;
 
-use std::sync::Mutex;
+use std::sync::RwLock;
 use lazy_static::lazy_static;
 pub use profiler::{PerformanceProfiler, FunctionProfile};
 
 
 lazy_static! {
-    pub static ref PROFILER: Mutex<PerformanceProfiler> = Mutex::new(PerformanceProfiler::default());
+    /// only use with the macro ``get_profiler!()``
+    pub static ref PROFILER: RwLock<PerformanceProfiler> = RwLock::new(PerformanceProfiler::default());
 }
 
 
