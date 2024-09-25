@@ -1,6 +1,7 @@
 use eframe::{CreationContext, Storage};
 use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
 use egui_plot::{Corner, Legend, Line, Plot};
+use performance_profiler::{get_profiler, time_event};
 use serde_json::{from_str, to_string};
 
 use crate::{get, get_mut, get_mut_ref};
@@ -52,6 +53,7 @@ impl Default for UiState {
 /// main user_interface areas
 impl MgsApp {
    /// handles sectioning
+   #[time_event("UI")]
    pub fn ui(&mut self, ui: &mut Ui) {
       self.top_menubar(ui);
 
@@ -129,6 +131,7 @@ impl MgsApp {
       ui.add_space(SPACE);
    }
 
+   #[time_event("PATH_TRACER_WINDOW")]
    fn path_tracer(&mut self, ui: &mut Ui) {
       self.path_tracer.display(ui);
    }
@@ -151,6 +154,7 @@ impl MgsApp {
       });
    }
 
+   #[time_event("MAIN_CONTENT")]
    fn main_content(&mut self, ui: &mut Ui) {
       match self.ui_state.main_content_page {
          MainContentPage::NodeEditor => {
@@ -184,6 +188,7 @@ impl MgsApp {
 
 /// sub areas
 impl MgsApp {
+   #[time_event("STATISTICS")]
    fn stats(&mut self, ui: &mut Ui) {
       get_mut_ref!(SETTINGS, settings);
       let graph_set = &mut settings.graph_settings;
@@ -195,6 +200,13 @@ impl MgsApp {
       const DEF_WIDTH: f32 = 600.0;
       const DEF_HEIGHT: f32 = 400.0;
 
+
+      // performance profiler
+      ui.group(|ui| {
+         ui.set_height(DEF_HEIGHT);
+         ui.set_width(DEF_WIDTH);
+         get_profiler().handy_performance_benchmarking_ui_section_with_cool_looking_graphs_and_knobs_and_things_and_stuff_looks_very_cool(ui);
+      });
 
       // fps graph
       ui.group(|ui| {

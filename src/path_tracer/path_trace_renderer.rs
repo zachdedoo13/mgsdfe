@@ -1,3 +1,4 @@
+use performance_profiler::get_profiler;
 use std::iter;
 
 use eframe::CreationContext;
@@ -5,6 +6,7 @@ use eframe::emath::{Rect, Vec2};
 use egui::{Button, Image, Pos2, Response, Sense, Ui};
 use egui::load::SizedTexture;
 use egui_wgpu::RenderState;
+use performance_profiler::{time_event, time_event_mac};
 use wgpu::{CommandEncoderDescriptor, Extent3d};
 
 use crate::{get, get_mut_ref, gpu_profile_section};
@@ -52,12 +54,16 @@ impl PathTracerRenderer {
       }
    }
 
+   #[time_event("PATH_TRACER")]
    pub fn update(&mut self, render_state: &RenderState) {
       get_mut_ref!(SETTINGS, settings);
 
       self.render_pass(render_state);
 
-      self.display_texture.update(render_state, &settings.image_size_settings);
+      time_event_mac!("UPDATE_TEXTURES", {
+         self.display_texture.update(render_state, &settings.image_size_settings);
+      });
+
 
       if self.queue_pipeline_remake {
          self.path_tracer_package.remake_pipeline(&render_state.device);
@@ -75,7 +81,7 @@ impl PathTracerRenderer {
       }
 
       // update scene
-      {
+      time_event_mac!("UPDATE_SCENE", {
          let path_set = &mut settings.current_scene.parthtrace_settings;
          path_set.time = get!(TIME).start_time.elapsed().as_secs_f32();
          path_set.frame += 1;
@@ -86,7 +92,7 @@ impl PathTracerRenderer {
          self.path_tracer_package.storage_textures.size.width = iss.width;
          self.path_tracer_package.storage_textures.size.height = iss.height;
          self.path_tracer_package.storage_textures.update(&render_state.device);
-      }
+      });
    }
 
    pub fn display(&mut self, ui: &mut Ui) {
@@ -143,6 +149,7 @@ impl PathTracerRenderer {
 
    fn handle_input(&mut self, _ui: &mut Ui, _response: &Response) {}
 
+   #[time_event("RENDER_PASS")]
    fn render_pass(&mut self, render_state: &RenderState) {
       let mut encoder = render_state.device.create_command_encoder(&CommandEncoderDescriptor {
          label: Some("Render Encoder"),

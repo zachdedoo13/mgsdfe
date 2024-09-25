@@ -1,3 +1,4 @@
+use performance_profiler::{get_profiler, time_function_mac};
 use std::time::Duration;
 
 use eframe::{App, CreationContext, Frame, Storage};
@@ -40,9 +41,13 @@ impl MgsApp {
    }
 
    /// global update inter-loop
+   #[performance_profiler::time_event("MAIN_UPDATE")]
    pub fn update(&mut self, render_state: &RenderState) {
-      // update singletons
-      get_mut!(TIME).update();
+      time_function_mac!("TIME_MANAGER", {
+         // update singletons
+         get_mut!(TIME).update();
+      });
+
 
       // update modules
       self.path_tracer.update(render_state);
@@ -56,6 +61,7 @@ impl MgsApp {
 
 /// eframe shizz
 impl App for MgsApp {
+   #[performance_profiler::main_event_loop("OVERALL_PERFORMANCE")]
    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
       self.update(frame.wgpu_render_state().expect("Failed to unwrap render state"));
 
@@ -81,8 +87,6 @@ impl App for MgsApp {
       self.ui_state.save(storage);
       get_mut!(SETTINGS).save(storage);
    }
-
-   fn on_exit(&mut self) {}
 
    fn auto_save_interval(&self) -> Duration {
       Duration::from_secs(5)
