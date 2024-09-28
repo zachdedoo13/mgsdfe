@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use egui_wgpu::RenderState;
 use wgpu::{BindGroup, BindGroupLayout, Color, CommandEncoder, IndexFormat, PipelineCompilationOptions, PipelineLayoutDescriptor, RenderPipeline, TextureFormat};
-
+use crate::app::PROF;
 use crate::gpu_profile_section;
 use crate::path_tracer::render_utility::gpu_profiler::GpuProfiler;
 use crate::path_tracer::render_utility::helper_structs::{EguiTexturePackage, f32_to_extent, UniformFactory};
@@ -91,6 +91,7 @@ impl DisplayTexture {
       }
    }
 
+   #[triglyceride::time_event(PROF, "DISPLAY_TEXTURE_UPDATE")]
    pub fn update(&mut self, render_state: &RenderState, iss: &ImageSizeSettings) {
       self.texture.update(render_state);
       self.uniform.update_with_data(&render_state.queue, &DisplaySettings::from_settings(iss))

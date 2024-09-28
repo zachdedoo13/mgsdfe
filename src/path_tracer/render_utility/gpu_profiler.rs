@@ -3,6 +3,7 @@
 use egui::ahash::HashMap;
 use instant::Instant;
 use wgpu::{Buffer, BufferDescriptor, BufferUsages, CommandEncoder, Device, QuerySet, QuerySetDescriptor, QueryType, Queue};
+use crate::app::PROF;
 
 pub struct GpuProfiler {
    pub query_count: u32,
@@ -124,6 +125,7 @@ impl GpuProfiler {
       }
    }
 
+   #[triglyceride::time_event(PROF, "PULL_TIME_DATA")]
    fn read_data(&mut self, queue: &Queue, device: &Device) -> Vec<(String, f64)> {
       let timeings: Vec<u64> = read_buffer_to_vec(device, &self.cpu_buffer).expect("failed to read data");
       let period = queue.get_timestamp_period() as f64;

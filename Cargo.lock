@@ -2062,11 +2062,11 @@ dependencies = [
  "instant",
  "log",
  "once_cell",
- "performance_profiler",
  "pollster",
  "serde",
  "serde_json",
  "strum",
+ "triglyceride",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wgpu",
@@ -2431,33 +2431,6 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
-
-[[package]]
-name = "performance_profiler"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d23e02f387e614dd84f86f0f919e2e30ac963ebba9cbcd1681d8b7dcf50a48e"
-dependencies = [
- "cfg",
- "eframe",
- "egui",
- "egui_plot",
- "instant",
- "lazy_static",
- "performance_profiler_per_macros",
- "rand",
- "winit",
-]
-
-[[package]]
-name = "performance_profiler_per_macros"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fcc07f3dcf67147b13d35f57ed26c993fc5c2ccd186872e8fdb7c140057a9b2"
-dependencies = [
- "quote",
- "syn 2.0.77",
-]
 
 [[package]]
 name = "pin-project-lite"
@@ -3218,6 +3191,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
+]
+
+[[package]]
+name = "tri_macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.77",
+]
+
+[[package]]
+name = "triglyceride"
+version = "0.1.1"
+dependencies = [
+ "cfg",
+ "eframe",
+ "egui",
+ "egui_plot",
+ "instant",
+ "lazy_static",
+ "rand",
+ "tri_macros",
+ "winit",
 ]
 
 [[package]]

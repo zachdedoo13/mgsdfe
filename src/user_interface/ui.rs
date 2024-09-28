@@ -1,9 +1,10 @@
+use crate::app::PROF;
 use eframe::{CreationContext, Storage};
-use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b};
+use egui::{CentralPanel, CollapsingHeader, ComboBox, DragValue, FontId, RichText, ScrollArea, SidePanel, Slider, TopBottomPanel, Ui, Vec2b, Window};
 use egui_plot::{Corner, Legend, Line, Plot};
-use performance_profiler::{get_profiler, time_event};
-use serde_json::{from_str, to_string};
 
+use serde_json::{from_str, to_string};
+use triglyceride::open_profiler;
 use crate::{get, get_mut, get_mut_ref};
 use crate::app::MgsApp;
 use crate::singletons::settings::SETTINGS;
@@ -23,6 +24,7 @@ enum MainContentPage {
 #[derive(serde::Serialize, serde::Deserialize, Copy, Clone)]
 pub struct UiState {
    main_content_page: MainContentPage,
+   floating_profiler_window: bool,
 }
 
 impl UiState {
@@ -31,7 +33,7 @@ impl UiState {
       let str = cc.storage.unwrap().get_string("ui_state");
       match str {
          None => UiState::default(),
-         Some(str) => from_str::<UiState>(str.as_str()).unwrap(),
+         Some(str) => from_str::<UiState>(str.as_str()).unwrap_or_default(),
       }
    }
 
@@ -45,6 +47,7 @@ impl Default for UiState {
    fn default() -> Self {
       Self {
          main_content_page: MainContentPage::NodeEditor,
+         floating_profiler_window: false,
       }
    }
 }
@@ -53,8 +56,19 @@ impl Default for UiState {
 /// main user_interface areas
 impl MgsApp {
    /// handles sectioning
-   #[time_event("UI")]
+   #[triglyceride::time_event(PROF, "ALL_UI")]
    pub fn ui(&mut self, ui: &mut Ui) {
+      if self.ui_state.floating_profiler_window {
+         open_profiler(&PROF, |mut p| {
+            Window::new("Profiler")
+                .resizable(true)
+                .open(&mut self.ui_state.floating_profiler_window)
+                .show(ui.ctx(), |ui| {
+                   p.handy_performance_benchmarking_ui_section_with_cool_looking_graphs_and_knobs_and_things_and_stuff_looks_very_cool(ui);
+                });
+         })
+      }
+
       self.top_menubar(ui);
 
       SidePanel::left("Left menubar")
@@ -131,7 +145,7 @@ impl MgsApp {
       ui.add_space(SPACE);
    }
 
-   #[time_event("PATH_TRACER_WINDOW")]
+   #[triglyceride::time_event(PROF, "DISPLAY_PATH_TRACER")]
    fn path_tracer(&mut self, ui: &mut Ui) {
       self.path_tracer.display(ui);
    }
@@ -154,7 +168,8 @@ impl MgsApp {
       });
    }
 
-   #[time_event("MAIN_CONTENT")]
+
+   #[triglyceride::time_event(PROF, "MAIN_CONTENT")]
    fn main_content(&mut self, ui: &mut Ui) {
       match self.ui_state.main_content_page {
          MainContentPage::NodeEditor => {
@@ -184,11 +199,9 @@ impl MgsApp {
    }
 }
 
-// static mut TEST_THEME: catppuccin_egui::Theme = catppuccin_egui::MACCHIATO;
-
 /// sub areas
 impl MgsApp {
-   #[time_event("STATISTICS")]
+   #[triglyceride::time_event(PROF, "STATS")]
    fn stats(&mut self, ui: &mut Ui) {
       get_mut_ref!(SETTINGS, settings);
       let graph_set = &mut settings.graph_settings;
@@ -199,14 +212,6 @@ impl MgsApp {
 
       const DEF_WIDTH: f32 = 600.0;
       const DEF_HEIGHT: f32 = 400.0;
-
-
-      // performance profiler
-      ui.group(|ui| {
-         ui.set_height(DEF_HEIGHT);
-         ui.set_width(DEF_WIDTH);
-         get_profiler().handy_performance_benchmarking_ui_section_with_cool_looking_graphs_and_knobs_and_things_and_stuff_looks_very_cool(ui);
-      });
 
       // fps graph
       ui.group(|ui| {
@@ -244,9 +249,24 @@ impl MgsApp {
              .allow_boxed_zoom(false)
              .include_y(0.0)
              .include_y(fps_graph_set.include_upper)
-             .show_axes(Vec2b::new(false, true))
+             .show_axes([false, true])
              .show(ui, |plot_ui| plot_ui.line(line));
       });
+
+      // profiler
+      if ui.button("Floating").clicked() {
+         self.ui_state.floating_profiler_window = ! self.ui_state.floating_profiler_window;
+      }
+      if !self.ui_state.floating_profiler_window {
+         ui.group(|ui| {
+            ui.set_min_width(DEF_WIDTH);
+            ui.set_min_height(DEF_HEIGHT);
+
+            open_profiler(&PROF, |mut p| {
+               p.handy_performance_benchmarking_ui_section_with_cool_looking_graphs_and_knobs_and_things_and_stuff_looks_very_cool(ui);
+            })
+         });
+      }
 
       // gpu profiler graph
       ui.group(|ui| {

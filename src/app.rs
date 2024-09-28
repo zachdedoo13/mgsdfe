@@ -1,10 +1,10 @@
-use performance_profiler::{get_profiler, time_function_mac};
 use std::time::Duration;
 
 use eframe::{App, CreationContext, Frame, Storage};
 use eframe::epaint::Rgba;
 use egui::{CentralPanel, Context, Visuals};
 use egui_wgpu::RenderState;
+use triglyceride::{init_profiler, open_profiler};
 
 use crate::{get_mut, set_none_static};
 use crate::graph_editor::graph_editor::GraphEditor;
@@ -12,6 +12,9 @@ use crate::path_tracer::path_trace_renderer::PathTracerRenderer;
 use crate::singletons::settings::{SETTINGS, Settings};
 use crate::singletons::time_package::TIME;
 use crate::user_interface::ui::UiState;
+
+init_profiler!(PROF, triglyceride::Settings::default());
+
 
 pub struct MgsApp {
    pub path_tracer: PathTracerRenderer,
@@ -41,12 +44,11 @@ impl MgsApp {
    }
 
    /// global update inter-loop
-   #[performance_profiler::time_event("MAIN_UPDATE")]
+   #[triglyceride::time_event(PROF, "APP_UPDATE")]
    pub fn update(&mut self, render_state: &RenderState) {
-      time_function_mac!("TIME_MANAGER", {
-         // update singletons
-         get_mut!(TIME).update();
-      });
+
+      // update singletons
+      get_mut!(TIME).update();
 
 
       // update modules
@@ -61,15 +63,21 @@ impl MgsApp {
 
 /// eframe shizz
 impl App for MgsApp {
-   #[performance_profiler::main_event_loop("OVERALL_PERFORMANCE")]
+   #[triglyceride::time_event(PROF, "EFRAME_UPDATE")]
    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
       self.update(frame.wgpu_render_state().expect("Failed to unwrap render state"));
 
       // overload panel
-      CentralPanel::default()
-          .show(ctx, |ui| {
-             self.ui(ui);
+      triglyceride::time_event_mac!(PROF, "UI_UPDATE", {
+         CentralPanel::default()
+             .show(ctx, |ui| {
+                self.ui(ui);
           });
+      });
+
+      open_profiler(&PROF, |mut p| {
+         p.set_constant_reference("OVERALL")
+      });
 
       ctx.request_repaint();
 
